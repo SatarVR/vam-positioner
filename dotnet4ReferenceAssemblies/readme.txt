@@ -1,0 +1,1 @@
+copy folder to C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework
