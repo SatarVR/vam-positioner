@@ -69,7 +69,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="Positioner.cs" />
+    <Compile Include="Custom\Scripts\Gardan\Positioner\Positioner.cs" />
   </ItemGroup>
 
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
