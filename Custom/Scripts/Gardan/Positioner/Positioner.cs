@@ -19,54 +19,28 @@ public class Positioner : MVRScript
 {
     private static string SAVE_PREFIX = "Positioner_";
 
-    // Plugin data (due to the fact that the UI is instantiated after init, I need to grab my data and restore manually
-    protected JSONClass dialogsDatas { get; set; }
-
     private Atom _containingAtom;
     private JSONStorableBool _isPositionerHost;
-    protected List<MonitorCoordinates> MonitorCoordinatesList = new List<MonitorCoordinates>();
-
     protected List<string> MonitorCoordinatesStringList = new List<string>();
-
     protected List<string> monitorPositionChoices;
     protected JSONStorableStringChooser MonitorPositionSelector;
-
-    // Dynamic UI
     protected List<UIDynamic> globalControlsUIs = new List<UIDynamic>();
-
     public JSONStorableString DialogTextUI;
-
     protected InputField DialogTextInputFieldUI;
-
     protected UIDynamicTextField dialogTitle;
-
     protected List<UIDynamic> dialogsComponentsUI = new List<UIDynamic>();
-
     private bool isInit = false;
 
     public override void Init()
     {
         _containingAtom = containingAtom;
 
-        /*
-                var addCoords = new JSONStorableAction("AddCoords", AddNewCoords);
-                RegisterAction(addCoords);
-                var btn = CreateButton("AddCoords");
-                addCoords.dynamicButton = btn;
-        */
-
         // add button
         UIDynamicButton newDialogBtn = CreateButton("New coords", true);
         newDialogBtn.button.onClick.AddListener(() => { OnAddNewDialog(); });
-        //setButtonColor(newDialogBtn, new Color(0.3f, 0.6f, 0.3f, 1f));
-        //setButtonTextColor(newDialogBtn, new Color(1f, 1f, 1f, 1f));
         globalControlsUIs.Add((UIDynamic)newDialogBtn);
-        //setupButtonWithLayout(newDialogBtn, 190f);
 
-
-        // TODO: Now we have a generic list where we can add coords
-        // create a GUI list that we can see (check audiomate?)
-
+        // Create UI elements
         CreateDialogUI();
 
         // MonitorPosition choices
@@ -81,7 +55,6 @@ public class Positioner : MVRScript
 
         if (enabled)
             OnEnable();
-
     }
 
     protected void OnAddNewDialog()
@@ -100,7 +73,7 @@ public class Positioner : MVRScript
         //MonitorCoordinatesList.Add(new MonitorCoordinates(this, dialogId, centerCameraPosition, monitorCenterCameraRotation));
 
         MonitorCoordinates tmpCoords = new MonitorCoordinates(centerCameraPosition, monitorCenterCameraRotation);
-        
+
         // We add the coordinates to a string list, so at each position in the list (ID), we have a set of coordinates
         MonitorCoordinatesStringList.Add(tmpCoords.MonitorCoordsToString());
 
@@ -109,7 +82,7 @@ public class Positioner : MVRScript
         UpdateTextField(dialogId);
     }
 
-    public void UpdateTextField (string dialogId)
+    public void UpdateTextField(string dialogId)
     {
         SuperController.LogMessage($"updating textfield");
 
@@ -130,10 +103,8 @@ public class Positioner : MVRScript
 
         SuperController.LogMessage($"monitor position choices: " + MonitorPositionSelector.choices.Count);
         SuperController.LogMessage($"first monitor position choice: " + MonitorPositionSelector.choices[0]);
-        SuperController.LogMessage($"last monitor position choice: " + MonitorPositionSelector.choices[MonitorPositionSelector.choices.Count-1]);
-
+        SuperController.LogMessage($"last monitor position choice: " + MonitorPositionSelector.choices[MonitorPositionSelector.choices.Count - 1]);
     }
-
 
     protected void OnToggleDialogId(string dialogId)
     {
@@ -142,13 +113,9 @@ public class Positioner : MVRScript
         // TODO: maybe remove this?
         if (isInit == false) return;
 
-        // TODO: here we get the selected dialog ID and want to update the text field
-
+        // here we get the selected dialog ID and want to update the text field
         UpdateTextField(dialogId);
-
-        //UpdateLocalUIFromActiveDialog();
     }
-
 
     protected void CreateDialogUI()
     {
@@ -156,7 +123,6 @@ public class Positioner : MVRScript
 
         // Temporary vars
         UIDynamicTextField tmpTextfield;
-
 
         // Creating Dialog components
         // ******* DIALOG TITLE (ID) ***********
@@ -175,7 +141,6 @@ public class Positioner : MVRScript
         DialogTextUI.valNoCallback = newDefaultText;
         DialogTextInputFieldUI.text = newDefaultText;
         DialogTextInputFieldUI.onValueChanged.AddListener(delegate { OnDialogTextChanged(); });
-
     }
 
     protected void OnDialogTextChanged()
@@ -186,7 +151,6 @@ public class Positioner : MVRScript
         //activeDialog.DialogText.val = DialogTextInputFieldUI.text;
     }
 
-
     private void setupTextField(UIDynamicTextField target, float fieldHeight, bool disableBackground = true, bool disableScroll = true)
     {
         if (disableBackground) target.backgroundColor = new Color(1f, 1f, 1f, 0f);
@@ -195,8 +159,6 @@ public class Positioner : MVRScript
         target.height = fieldHeight;
         if (disableScroll) disableScrollOnText(target);
     }
-
-
 
     public UIDynamicTextField createStaticDescriptionText(string DescTitle, string DescText, bool rightSide, int fieldHeight, TextAnchor textAlignment = TextAnchor.UpperLeft)
     {
@@ -223,7 +185,6 @@ public class Positioner : MVRScript
         }
     }
 
-
     private void OnEnable()
     {
         if (_containingAtom == null) return;
@@ -238,22 +199,6 @@ public class Positioner : MVRScript
         _containingAtom.DeregisterBool(_isPositionerHost);
         _isPositionerHost = null;
     }
-
-    private void DebugMonitorCoords()
-    {
-        var sc = SuperController.singleton;
-
-        // get camera position
-        var centerCameraPosition = sc.centerCameraTarget.transform.position;
-
-        // get camera rotation?
-        var monitorCenterCameraRotation = sc.MonitorCenterCamera.transform;
-
-        // show in log
-        SuperController.LogMessage($"Pos: " + centerCameraPosition.x + ", " + centerCameraPosition.y);
-        SuperController.LogMessage($"Rot: " + monitorCenterCameraRotation.eulerAngles.x + ", " + monitorCenterCameraRotation.eulerAngles.y + ", " + monitorCenterCameraRotation.eulerAngles.z);
-    }
-
 
     public void OnBindingsListRequested(List<object> bindings)
     {
@@ -271,17 +216,10 @@ public class Positioner : MVRScript
 
     public class MonitorCoordinates
     {
-        private Positioner _Positioner;
-
         protected JSONClass dialogsDatas { get; set; }
-
         public int MonitorCoordsID;
         public Vector3 MonitorPosition;
         public Transform MonitorRotation;
-
-        public JSONStorableString DialogText;
-
-        protected InputField DialogTextInputField;
 
         public MonitorCoordinates(Vector3 monitorPosition, Transform monitorRotation)
         {
@@ -295,46 +233,8 @@ public class Positioner : MVRScript
             return coordsAsString;
         }
 
-        public MonitorCoordinates(Positioner rootScript, int monitorCoordsID, Vector3 monitorPosition, Transform monitorRotation)
-        {
-            _Positioner = rootScript;
-
-            MonitorCoordsID = monitorCoordsID;
-            MonitorPosition = monitorPosition;
-            MonitorRotation = monitorRotation;
-        }
-
-        /*
-                protected void CreateDialogComponents()
-                {
-
-                    // Creating Dialog components
-
-                    // ******* DIALOG TEXT ***********
-                    DialogText = new JSONStorableString(SAVE_PREFIX + "_" + MonitorCoordsID + "-Text", "_default_");
-                    DialogText.valNoCallback = "Type some text...";
-
-                    // Registering everything
-                    RegisterStorables();
-                }
-                */
-
-        protected void DeregisterStorables()
-        {
-
-            _Positioner.DeregisterString(DialogText);
-        }
-
-        protected void RegisterStorables()
-        {
-            _Positioner.RegisterString(DialogText);
-        }
-
         public void Delete()
         {
-
-            // Unregistering vars
-            DeregisterStorables();
 
             // Clearing data from the loaded data of the scene (to prevent re-restore after deleting)
             // This only happens when you load a scene and have data loaded from the json
@@ -342,11 +242,6 @@ public class Positioner : MVRScript
             {
                 dialogsDatas.Remove(SAVE_PREFIX + "_" + MonitorCoordsID + "-Text");
             }
-
         }
-
     }
 }
-
-
-
