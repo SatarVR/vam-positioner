@@ -163,10 +163,31 @@ public class Positioner : MVRScript
         }
     }
 
+
+    protected void AddOrUpdateCameraList(string cameraTitle, string coords)
+    {
+        bool titleFoundInList = false;
+        for (int i = 0; i < MonitorPositionCameraTitles.Count; i++)
+        {
+            if (MonitorPositionCameraTitles[i] == cameraTitle)
+            {
+                // title already exists, so we update the value
+                MonitorCoordinatesStringList[i] = coords;
+                titleFoundInList = true;
+                break;
+            }
+        }
+
+        if (!titleFoundInList)
+        {
+            MonitorPositionCameraTitles.Add(cameraTitle);
+            MonitorCoordinatesStringList.Add(coords);
+        }
+    }
+
     // This happens when the button add coords is pressed
     protected void OnAddNewCoords()
     {
-        // string cameraTitle = MonitorCoordinatesStringList.Count.ToString();
         string cameraTitle = CameraTitleInputFieldUI.text;
 
         var sc = SuperController.singleton;
@@ -181,10 +202,8 @@ public class Positioner : MVRScript
         MonitorCoordinates tmpCoords = new MonitorCoordinates(centerCameraPosition, monitorCenterCameraRotation);
 
         // We add the coordinates to a string list, so at each position in the list (ID), we have a set of coordinates
-        MonitorPositionCameraTitles.Add(cameraTitle);
-        MonitorCoordinatesStringList.Add(tmpCoords.MonitorCoordsToString());
-
-        SuperController.LogMessage("Added coords and camera title: '" + cameraTitle + "'");
+        // but check if we need to update instead of adding a value
+        AddOrUpdateCameraList(cameraTitle, tmpCoords.MonitorCoordsToString());
 
         RefreshSelectors(cameraTitle);
 
@@ -330,7 +349,7 @@ public class Positioner : MVRScript
         }
         else
         {
-            return cameraTitle+"1";
+            return cameraTitle + "1";
         }
     }
 
