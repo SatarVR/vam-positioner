@@ -11,12 +11,14 @@ public class Positioner : MVRScript
     private JSONStorableBool _isPositionerHost;
     protected Dictionary<string, string> MonitorCoordinatesStringDict = new Dictionary<string, string>();
     protected List<string> monitorPositionChoices;
-    protected JSONStorableStringChooser MonitorPositionSelector;
+    protected JSONStorableStringChooser MonitorPositionChooser;
     protected List<UIDynamic> globalControlsUIs = new List<UIDynamic>();
     public JSONStorableString CoordsTextUI;
     protected InputField CoordsTextInputFieldUI;
     protected InputField CameraTitleInputFieldUI;
-    protected UIDynamicTextField coordsTextTitle;
+    protected JSONStorableString cameraTitle;
+    protected UIDynamicTextField UICoordsSectionTitle;
+    protected UIDynamicTextField UICameraSectionTitle;
     protected List<UIDynamic> coordsComponentsUI = new List<UIDynamic>();
 
     protected bool isInit = false;
@@ -45,13 +47,13 @@ public class Positioner : MVRScript
 
         // MonitorPosition choices
         monitorPositionChoices = new List<string>();
-        MonitorPositionSelector = new JSONStorableStringChooser("Monitor position ID", monitorPositionChoices, "", "Monitor position ID");
-        MonitorPositionSelector.isRestorable = true;
-        MonitorPositionSelector.isStorable = true;
-        MonitorPositionSelector.storeType = JSONStorableParam.StoreType.Full;
-        RegisterStringChooser(MonitorPositionSelector);
-        MonitorPositionSelector.setCallbackFunction += (val) => { OnTogglecameraTitle(val); };
-        UIDynamicPopup DSelsp = CreateScrollablePopup(MonitorPositionSelector, true);
+        MonitorPositionChooser = new JSONStorableStringChooser("Monitor position ID", monitorPositionChoices, "", "Monitor position ID");
+        MonitorPositionChooser.isRestorable = true;
+        MonitorPositionChooser.isStorable = true;
+        MonitorPositionChooser.storeType = JSONStorableParam.StoreType.Full;
+        RegisterStringChooser(MonitorPositionChooser);
+        MonitorPositionChooser.setCallbackFunction += (val) => { OnChangeSelectedCameraTitle(val); };
+        UIDynamicPopup DSelsp = CreateScrollablePopup(MonitorPositionChooser, true);
         DSelsp.labelWidth = 250f;
         globalControlsUIs.Add((UIDynamic)DSelsp);
 
@@ -100,16 +102,30 @@ public class Positioner : MVRScript
 
         JSONClass jsonObject = base.GetJSON(includePhysical, includeAppearance, forceStore);
 
-        // Store MonitorCoordinatesStringDict
+        // Store Camera Titles from MonitorCoordinatesStringDictionary
+        JSONArray cameraTitlesArray = new JSONArray();
+
+        foreach (string cameraTitle in MonitorCoordinatesStringDict.Keys)
+        {
+            cameraTitlesArray.Add(cameraTitle);
+        }
+    /*
+
+        jsonObject["MonitorCoordinatesCameraTitles"] = cameraTitlesArray;
+
+        // Store Camera Coordinates from MonitorCoordinatesStringDictionary
         JSONArray monitorCoordsArray = new JSONArray();
         foreach (string coord in MonitorCoordinatesStringDict.Values)
         {
             monitorCoordsArray.Add(coord);
         }
-        jsonObject["MonitorCoordinatesStringDict"] = monitorCoordsArray;
+        jsonObject["MonitorCoordinatesStrings"] = monitorCoordsArray;
+
+    */
 
         return jsonObject;
     }
+/*
 
     // We also need to override this to restore our custom array from the savegame file
     public override void LateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
@@ -118,35 +134,39 @@ public class Positioner : MVRScript
 
         base.LateRestoreFromJSON(jc, restorePhysical, restoreAppearance, setMissingToDefault);
 
-        JSONArray coordsList = jc["MonitorCoordinatesStringDict"].AsArray;
-        MonitorCoordinatesStringDict.Clear();
+        JSONArray cameraTitlesArray = jc["MonitorCoordinatesCameraTitles"].AsArray;
+        JSONArray coordsArray = jc["MonitorCoordinatesStrings"].AsArray;
 
-        // Fill our string list with the saved coordinates
-        foreach (JSONNode node in coordsList)
+        // only do this, if we actually have something to restore
+        if (cameraTitlesArray.Count > 0)
         {
-            string coords = node.Value;
-            // TODO: we need the actual title of the field here, just counting the index won't do anymore
-            // MonitorCoordinatesStringDict.Add( , coords);
-            //-----------------------------////////////////----------------------*******************-----------------**********************----------------
+            MonitorCoordinatesStringDict.Clear();
+
+            // Fill our Dictionary with the saved coordinates
+            for (int i = 0; i<cameraTitlesArray.Count;i++)
+            {
+                MonitorCoordinatesStringDict.Add(cameraTitlesArray[i], coordsArray[i]);
+            }
+
+            SuperController.LogMessage($"AFTER Load stringlist count: " + MonitorCoordinatesStringDict.Count);
+
+            // Fill the slider with the camera titles , so we can select the coordinates from the dictionary
+            monitorPositionChoices.Clear();
+            foreach (string key in MonitorCoordinatesStringDict.Keys)
+            {
+                monitorPositionChoices.Add(key);
+            }
+
+            MonitorPositionChooser.valNoCallback = "";
+            MonitorPositionChooser.choices = null; // force UI sync
+            MonitorPositionChooser.choices = monitorPositionChoices;
+
+            // default to first item
+            MonitorPositionChooser.val = cameraTitlesArray[0];
+            UpdateTextField("0");
         }
-
-        // SuperController.LogMessage($"AFTER Load stringlist count: " + MonitorCoordinatesStringDict.Count);
-
-        // Fill the slider with the ID's, so we can select the coordinates from the string list
-        monitorPositionChoices.Clear();
-        for (int i = 0; i < MonitorCoordinatesStringDict.Count; i++)
-        {
-            monitorPositionChoices.Add(i.ToString());
-        }
-
-        MonitorPositionSelector.valNoCallback = "";
-        MonitorPositionSelector.choices = null; // force UI sync
-        MonitorPositionSelector.choices = monitorPositionChoices;
-
-        // default to 0
-        MonitorPositionSelector.val = "0";
-        UpdateTextField("0");
     }
+*/
 
     // This happens when the button add coords is pressed
     protected void OnAddNewCoords()
@@ -286,19 +306,19 @@ public class Positioner : MVRScript
         monitorPositionChoices.Add(cameraTitle);
 
         // Update selector
-        MonitorPositionSelector.valNoCallback = "";
-        MonitorPositionSelector.choices = null; // force UI sync
-        MonitorPositionSelector.choices = monitorPositionChoices;
-        MonitorPositionSelector.val = cameraTitle;
+        MonitorPositionChooser.valNoCallback = "";
+        MonitorPositionChooser.choices = null; // force UI sync
+        MonitorPositionChooser.choices = monitorPositionChoices;
+        MonitorPositionChooser.val = cameraTitle;
 
         // Now that we've added the camera title to the selector, let's suggest the next title
         // TODO2: make this smarter so it at least tries to increment the last number if exists or adds a number
         CameraTitleInputFieldUI.text = CameraTitleInputFieldUI.text+"_2";
     }
 
-    protected void OnTogglecameraTitle(string cameraTitle)
+    protected void OnChangeSelectedCameraTitle(string cameraTitle)
     {
-        // here we get the selected ID and want to update the text field
+        // here we get the selected camera title and want to update the text field
         UpdateTextField(cameraTitle);
     }
 
@@ -312,20 +332,24 @@ public class Positioner : MVRScript
 
         // Creating components
         // ******* SECTION TITLE ***********
-        coordsTextTitle = CreateStaticDescriptionText("coordsTextTitle", "<color=#000><size=35><b>Coords</b></size></color>", false, 55, TextAnchor.MiddleLeft);
-        coordsComponentsUI.Add((UIDynamic)coordsTextTitle);
+        UICameraSectionTitle = CreateStaticDescriptionText("UICameraSectionTitle", "<color=#000><size=35><b>Next camera name</b></size></color>", false, 55, TextAnchor.MiddleLeft);
+        coordsComponentsUI.Add((UIDynamic)UICameraSectionTitle);
 
         // ******* CAMERA TITLE TEXTFIELD ***********
-        JSONStorableString cameraTitle = new JSONStorableString("CameraTitle", "0");
+        cameraTitle = new JSONStorableString("CameraTitle", "0");
         tmp2Textfield = CreateTextField(cameraTitle);
+        SetupTextField(tmp2Textfield, 50f, false, false);
         CameraTitleInputFieldUI = tmp2Textfield.UItext.gameObject.AddComponent<InputField>();
         CameraTitleInputFieldUI.textComponent = tmp2Textfield.UItext;
         CameraTitleInputFieldUI.lineType = InputField.LineType.SingleLine;
         coordsComponentsUI.Add((UIDynamic)tmp2Textfield);
         CoordsTextUI.valNoCallback = "0";
-        CoordsTextInputFieldUI.text = "0";
-        CoordsTextInputFieldUI.onValueChanged.AddListener(delegate { OnCameraTitleTextChanged(); });
+        CameraTitleInputFieldUI.text = "0";
+        CameraTitleInputFieldUI.onValueChanged.AddListener(delegate { OnCameraTitleTextChanged(); });
 
+        // ******* SECTION TITLE ***********
+        UICoordsSectionTitle = CreateStaticDescriptionText("UICoordsSectionTitle", "<color=#000><size=35><b>Camera Coordinates</b></size></color>", false, 55, TextAnchor.MiddleLeft);
+        coordsComponentsUI.Add((UIDynamic)UICoordsSectionTitle);
 
         // ******* COORDS TEXTFIELD  ***********
         string newDefaultText = "Treat this as a read-only field, don't type in it.";
@@ -343,8 +367,9 @@ public class Positioner : MVRScript
 
     private void OnCameraTitleTextChanged()
     {
-        // TODO ok when we change the camera title text field, we should update it in the dropdown and list
-        throw new NotImplementedException();
+        CoordsTextUI.val = CameraTitleInputFieldUI.text;
+        // TODO ok when we change the camera title text field, we should update the coords value in the list, if it already exists
+        // actually only do this when pressing an update button, otherwise it happens on every keystroke
     }
 
     protected void OnCoordsTextChanged()
