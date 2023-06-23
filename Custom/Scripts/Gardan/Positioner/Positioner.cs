@@ -14,10 +14,10 @@ public class Positioner : MVRScript
     protected List<string> monitorPositionChoices;
     protected JSONStorableStringChooser MonitorPositionSelector;
     protected List<UIDynamic> globalControlsUIs = new List<UIDynamic>();
-    public JSONStorableString DialogTextUI;
-    protected InputField DialogTextInputFieldUI;
-    protected UIDynamicTextField dialogTitle;
-    protected List<UIDynamic> dialogsComponentsUI = new List<UIDynamic>();
+    public JSONStorableString CoordsTextUI;
+    protected InputField CoordsTextInputFieldUI;
+    protected UIDynamicTextField coordsTextTitle;
+    protected List<UIDynamic> coordsComponentsUI = new List<UIDynamic>();
     private bool isInit = false;
 
     public override void Init()
@@ -25,17 +25,17 @@ public class Positioner : MVRScript
         _containingAtom = containingAtom;
 
         // add button
-        UIDynamicButton newDialogBtn = CreateButton("New coords", true);
-        newDialogBtn.button.onClick.AddListener(() => { OnAddNewDialog(); });
-        globalControlsUIs.Add((UIDynamic)newDialogBtn);
+        UIDynamicButton addCoordsBtn = CreateButton("Add coords", true);
+        addCoordsBtn.button.onClick.AddListener(() => { OnAddNewCoords(); });
+        globalControlsUIs.Add((UIDynamic)addCoordsBtn);
 
         // Create UI elements
-        CreateDialogUI();
+        CreateCoordsUIelements();
 
         // MonitorPosition choices
         monitorPositionChoices = new List<string>();
         MonitorPositionSelector = new JSONStorableStringChooser("Monitor position ID", monitorPositionChoices, "", "Monitor position ID");
-        MonitorPositionSelector.setCallbackFunction += (val) => { OnToggleDialogId(val); };
+        MonitorPositionSelector.setCallbackFunction += (val) => { OnTogglecoordsId(val); };
         UIDynamicPopup DSelsp = CreateScrollablePopup(MonitorPositionSelector, true);
         DSelsp.labelWidth = 250f;
         globalControlsUIs.Add((UIDynamic)DSelsp);
@@ -46,9 +46,9 @@ public class Positioner : MVRScript
             OnEnable();
     }
 
-    protected void OnAddNewDialog()
+    protected void OnAddNewCoords()
     {
-        string dialogId = MonitorCoordinatesStringList.Count.ToString();
+        string coordsId = MonitorCoordinatesStringList.Count.ToString();
 
         var sc = SuperController.singleton;
 
@@ -59,91 +59,89 @@ public class Positioner : MVRScript
         var monitorCenterCameraRotation = sc.MonitorCenterCamera.transform;
 
         // Here we add coordinates to our coordinates list
-        //MonitorCoordinatesList.Add(new MonitorCoordinates(this, dialogId, centerCameraPosition, monitorCenterCameraRotation));
-
         MonitorCoordinates tmpCoords = new MonitorCoordinates(centerCameraPosition, monitorCenterCameraRotation);
 
         // We add the coordinates to a string list, so at each position in the list (ID), we have a set of coordinates
         MonitorCoordinatesStringList.Add(tmpCoords.MonitorCoordsToString());
 
-        RefreshSelectors(dialogId);
+        RefreshSelectors(coordsId);
 
-        UpdateTextField(dialogId);
+        UpdateTextField(coordsId);
     }
 
-    public void UpdateTextField(string dialogId)
+    public void UpdateTextField(string coordsId)
     {
         SuperController.LogMessage($"updating textfield");
 
-        int dialogIdInt = Int32.Parse(dialogId);
-        DialogTextInputFieldUI.text = MonitorCoordinatesStringList[dialogIdInt];
-        DialogTextUI.val = DialogTextInputFieldUI.text;
+        int coordsIdInt = Int32.Parse(coordsId);
+        CoordsTextInputFieldUI.text = MonitorCoordinatesStringList[coordsIdInt];
+        CoordsTextUI.val = CoordsTextInputFieldUI.text;
     }
 
-    protected void RefreshSelectors(string dialogId)
+    protected void RefreshSelectors(string coordsId)
     {
+        /*
         SuperController.LogMessage($"refreshing selector");
         SuperController.LogMessage($"MonitorPositionSelector.val1: " + MonitorPositionSelector.val);
         SuperController.LogMessage($"MonitorPositionSelector.valNoCallback1: " + MonitorPositionSelector.valNoCallback);
+        */
 
         // we need to add our monitor id to the choice selector
-        monitorPositionChoices.Add(dialogId);
+        monitorPositionChoices.Add(coordsId);
 
         MonitorPositionSelector.valNoCallback = "";
         MonitorPositionSelector.choices = null; // force UI sync
         MonitorPositionSelector.choices = monitorPositionChoices;
-        MonitorPositionSelector.val = dialogId;
+        MonitorPositionSelector.val = coordsId;
 
+        /*
         SuperController.LogMessage($"monitor position choices: " + MonitorPositionSelector.choices.Count);
         SuperController.LogMessage($"first monitor position choice: " + MonitorPositionSelector.choices[0]);
         SuperController.LogMessage($"last monitor position choice: " + MonitorPositionSelector.choices[MonitorPositionSelector.choices.Count - 1]);
         SuperController.LogMessage($"MonitorPositionSelector.val2: " + MonitorPositionSelector.val);
-        
+        */
     }
 
-    protected void OnToggleDialogId(string dialogId)
+    protected void OnTogglecoordsId(string coordsId)
     {
-        SuperController.LogMessage($"Dialog id was toggled, isinit? " + isInit);
+        //SuperController.LogMessage($"Coords id was toggled, isinit? " + isInit);
 
-        // here we get the selected dialog ID and want to update the text field
-        UpdateTextField(dialogId);
+        // here we get the selected ID and want to update the text field
+        UpdateTextField(coordsId);
     }
 
-    protected void CreateDialogUI()
+    protected void CreateCoordsUIelements()
     {
-        DialogTextUI = new JSONStorableString("DialogTextUI", "_default_") { isStorable = false, isRestorable = false };
+        CoordsTextUI = new JSONStorableString("CoordsTextUI", "_default_") { isStorable = false, isRestorable = false };
 
         // Temporary vars
         UIDynamicTextField tmpTextfield;
 
-        // Creating Dialog components
-        // ******* DIALOG TITLE (ID) ***********
-        dialogTitle = createStaticDescriptionText("DialogTitle", "<color=#000><size=35><b>Dialog</b></size></color>", false, 55, TextAnchor.MiddleLeft);
-        dialogsComponentsUI.Add((UIDynamic)dialogTitle);
+        // Creating components
+        // ******* COORDS TEXTFIELD TITLE ***********
+        coordsTextTitle = CreateStaticDescriptionText("coordsTextTitle", "<color=#000><size=35><b>Coords</b></size></color>", false, 55, TextAnchor.MiddleLeft);
+        coordsComponentsUI.Add((UIDynamic)coordsTextTitle);
 
-        // ******* DIALOG TEXT ***********
+        // ******* COORDS TEXTFIELD TEXT ***********
         string newDefaultText = "Type some text...";
-        DialogTextUI = new JSONStorableString("DialogTextUI", "_default_");
-        tmpTextfield = CreateTextField(DialogTextUI);
-        setupTextField(tmpTextfield, 550f, false, false);
-        DialogTextInputFieldUI = tmpTextfield.UItext.gameObject.AddComponent<InputField>();
-        DialogTextInputFieldUI.textComponent = tmpTextfield.UItext;
-        DialogTextInputFieldUI.lineType = InputField.LineType.MultiLineNewline;
-        dialogsComponentsUI.Add((UIDynamic)tmpTextfield);
-        DialogTextUI.valNoCallback = newDefaultText;
-        DialogTextInputFieldUI.text = newDefaultText;
-        DialogTextInputFieldUI.onValueChanged.AddListener(delegate { OnDialogTextChanged(); });
+        CoordsTextUI = new JSONStorableString("CoordsTextUI", "_default_");
+        tmpTextfield = CreateTextField(CoordsTextUI);
+        SetupTextField(tmpTextfield, 550f, false, false);
+        CoordsTextInputFieldUI = tmpTextfield.UItext.gameObject.AddComponent<InputField>();
+        CoordsTextInputFieldUI.textComponent = tmpTextfield.UItext;
+        CoordsTextInputFieldUI.lineType = InputField.LineType.MultiLineNewline;
+        coordsComponentsUI.Add((UIDynamic)tmpTextfield);
+        CoordsTextUI.valNoCallback = newDefaultText;
+        CoordsTextInputFieldUI.text = newDefaultText;
+        CoordsTextInputFieldUI.onValueChanged.AddListener(delegate { OnCoordsTextChanged(); });
     }
 
-    protected void OnDialogTextChanged()
+    protected void OnCoordsTextChanged()
     {
-        DialogTextUI.val = DialogTextInputFieldUI.text;
-
-        // TODO: set the dialog text?
-        //activeDialog.DialogText.val = DialogTextInputFieldUI.text;
+        CoordsTextUI.val = CoordsTextInputFieldUI.text;
     }
 
-    private void setupTextField(UIDynamicTextField target, float fieldHeight, bool disableBackground = true, bool disableScroll = true)
+    private void SetupTextField(UIDynamicTextField target, float fieldHeight, bool disableBackground = true, bool disableScroll = true)
     {
         if (disableBackground) target.backgroundColor = new Color(1f, 1f, 1f, 0f);
         LayoutElement tfLayout = target.GetComponent<LayoutElement>();
@@ -152,7 +150,7 @@ public class Positioner : MVRScript
         if (disableScroll) disableScrollOnText(target);
     }
 
-    public UIDynamicTextField createStaticDescriptionText(string DescTitle, string DescText, bool rightSide, int fieldHeight, TextAnchor textAlignment = TextAnchor.UpperLeft)
+    public UIDynamicTextField CreateStaticDescriptionText(string DescTitle, string DescText, bool rightSide, int fieldHeight, TextAnchor textAlignment = TextAnchor.UpperLeft)
     {
         JSONStorableString staticDescString = new JSONStorableString(DescTitle, DescText) { isStorable = false, isRestorable = false };
         staticDescString.hidden = true;
@@ -208,7 +206,7 @@ public class Positioner : MVRScript
 
     public class MonitorCoordinates
     {
-        protected JSONClass dialogsDatas { get; set; }
+        protected JSONClass coordsData { get; set; }
         public int MonitorCoordsID;
         public Vector3 MonitorPosition;
         public Transform MonitorRotation;
@@ -227,12 +225,11 @@ public class Positioner : MVRScript
 
         public void Delete()
         {
-
             // Clearing data from the loaded data of the scene (to prevent re-restore after deleting)
             // This only happens when you load a scene and have data loaded from the json
-            if (dialogsDatas != null)
+            if (coordsData != null)
             {
-                dialogsDatas.Remove(SAVE_PREFIX + "_" + MonitorCoordsID + "-Text");
+                coordsData.Remove(SAVE_PREFIX + "_" + MonitorCoordsID + "-Text");
             }
         }
     }
