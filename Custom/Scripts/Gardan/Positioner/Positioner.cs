@@ -74,8 +74,8 @@ public class Positioner : MVRScript
         RegisterStringChooser(A_SetMonitorCoords);
 
         helpText = new JSONStorableString("Help",
-                    "WTF is this?:\n" +
-                    "--------------\n\n" +
+                    "WTF is this?\n" +
+                    "-----------------\n\n" +
                     "Ok, the idea of this plugin is that you can move your monitor camera to a certain place, store the coordinates of your screen camera in a list and then later on set your camera back to the saved coordinates.\n\n" +
                     "This gets cool, if you store many camera locations and you are using another plugin (like VAMStory) to tell a story and want the user to see the exact camera angles that you had planned.\n\n" +
                     "So it's mainly great to use with another plugin, by calling an action called 'Set Camera Position' .\n\n" +
@@ -226,6 +226,8 @@ public class Positioner : MVRScript
     {
         string[] coordsStringArray = CoordsTextInputFieldUI.text.Split('_');
 
+        // SuperController.LogMessage("SetCoords coordsString: '" + coordsStringArray + "'");
+
         if (coordsStringArray.Length == 6)
         {
             try
@@ -250,8 +252,6 @@ public class Positioner : MVRScript
     // Read the coordinates from the UI text field and set the camera to that position
     protected void OnSetCoordsAction(string cameraTitle)
     {
-        SuperController.LogMessage("Trying to set coords for id requested by foreign action: '" + cameraTitle + "'");
-
         // get string from list by id
         string coordsString = "";
         for (int i = 0; i < MonitorPositionCameraTitles.Count; i++)
@@ -265,24 +265,28 @@ public class Positioner : MVRScript
 
         string[] coordsStringArray = coordsString.Split('_');
 
-        if (coordsStringArray.Length == 6)
+        // sometimes this array has only length 1 (empty string), can't figure out why, it works anyway, no need to bother the user about it.
+        if (coordsStringArray.Length > 1)
         {
-            try
+            if (coordsStringArray.Length == 6)
             {
-                Vector3 newCenterCameraPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
-                Vector3 newMonitorCenterCameraRotation = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
+                try
+                {
+                    Vector3 newCenterCameraPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
+                    Vector3 newMonitorCenterCameraRotation = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
 
-                SetCoords(newCenterCameraPosition, newMonitorCenterCameraRotation);
+                    SetCoords(newCenterCameraPosition, newMonitorCenterCameraRotation);
+                }
+                catch (Exception e)
+                {
+                    SuperController.LogError($"Could not parse coordinates from the text field.");
+                    SuperController.LogError(e.Message);
+                }
             }
-            catch (Exception e)
+            else
             {
-                SuperController.LogError($"Could not parse coordinates from the text field.");
-                SuperController.LogError(e.Message);
+                SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
             }
-        }
-        else
-        {
-            SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
         }
     }
 
