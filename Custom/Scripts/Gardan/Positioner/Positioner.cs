@@ -16,6 +16,7 @@ public class Positioner : MVRScript
     protected List<UIDynamic> globalControlsUIs = new List<UIDynamic>();
     public JSONStorableString CoordsTextUI;
     public JSONStorableString CameraTextUI;
+    JSONStorableString helpText;
     protected InputField CoordsTextInputFieldUI;
     protected InputField CameraTitleInputFieldUI;
     protected JSONStorableString cameraTitle;
@@ -72,9 +73,19 @@ public class Positioner : MVRScript
         A_SetMonitorCoords.setCallbackFunction += (val) => { OnSetCoordsAction(val); };
         RegisterStringChooser(A_SetMonitorCoords);
 
+        helpText = new JSONStorableString("Help",
+                    "WTF is this?:\n" +
+                    "--------------\n\n" +
+                    "Ok, the idea of this plugin is that you can move your monitor camera to a certain place, store the coordinates of your screen camera in a list and then later on set your camera back to the saved coordinates.\n\n" +
+                    "This gets cool, if you store many camera locations and you are using another plugin (like VAMStory) to tell a story and want the user to see the exact camera angles that you had planned.\n\n" +
+                    "So it's mainly great to use with another plugin, by calling an action called 'Set Camera Position' .\n\n" +
+                    "You can give the camera coordinates any kind of name, like Cam1. It helps to have a number at the end, the plugin will increment the number for you after adding another camera coordinates.\n\n"
+                );
+        UIDynamicTextField helpWindow = CreateTextField(helpText, true);
+        helpWindow.height = 850.0f;
+        globalControlsUIs.Add((UIDynamic)helpWindow);
 
         StartCoroutine(InitDeferred());
-
 
         if (enabled)
         {
@@ -393,7 +404,7 @@ public class Positioner : MVRScript
         string newDefaultText = "Treat this as a read-only field, don't type in it.";
         CoordsTextUI = new JSONStorableString("CoordsTextUI", "_default_");
         tmpTextfield = CreateTextField(CoordsTextUI);
-        SetupTextField(tmpTextfield, 550f, false, false);
+        SetupTextField(tmpTextfield, 100f, false, false);
         CoordsTextInputFieldUI = tmpTextfield.UItext.gameObject.AddComponent<InputField>();
         CoordsTextInputFieldUI.textComponent = tmpTextfield.UItext;
         CoordsTextInputFieldUI.lineType = InputField.LineType.MultiLineNewline;
