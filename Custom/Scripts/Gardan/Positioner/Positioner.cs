@@ -9,8 +9,8 @@ public class Positioner : MVRScript
 {
     private Atom _containingAtom;
     private JSONStorableBool _isPositionerHost;
-    protected Dictionary<string, string> MonitorCoordinatesStringDict = new Dictionary<string, string>();
-    protected List<string> monitorPositionChoices;
+    protected List<string> MonitorCoordinatesStringList = new List<string>();
+    protected List<string> monitorPositionCameraTitles;
     protected JSONStorableStringChooser MonitorPositionChooser;
     protected List<UIDynamic> globalControlsUIs = new List<UIDynamic>();
     public JSONStorableString CoordsTextUI;
@@ -46,8 +46,8 @@ public class Positioner : MVRScript
         CreateCoordsUIelements();
 
         // MonitorPosition choices
-        monitorPositionChoices = new List<string>();
-        MonitorPositionChooser = new JSONStorableStringChooser("Monitor position ID", monitorPositionChoices, "", "Monitor position ID");
+        monitorPositionCameraTitles = new List<string>();
+        MonitorPositionChooser = new JSONStorableStringChooser("Monitor position ID", monitorPositionCameraTitles, "", "Monitor position ID");
         MonitorPositionChooser.isRestorable = true;
         MonitorPositionChooser.isStorable = true;
         MonitorPositionChooser.storeType = JSONStorableParam.StoreType.Full;
@@ -65,7 +65,7 @@ public class Positioner : MVRScript
         RegisterAction(fakeFuncUseBelow);
 
         // This should show an action so that the monitor ID can be selected and called from another plugin
-        JSONStorableStringChooser A_SetMonitorCoords = new JSONStorableStringChooser("Set Camera Position", monitorPositionChoices, "", "Set Camera Position") 
+        JSONStorableStringChooser A_SetMonitorCoords = new JSONStorableStringChooser("Set Camera Position", monitorPositionCameraTitles, "", "Set Camera Position") 
         {isStorable=false,isRestorable=false};
         A_SetMonitorCoords.setCallbackFunction += (val) => { OnSetCoordsAction( val ); };
         RegisterStringChooser(A_SetMonitorCoords);
@@ -102,10 +102,10 @@ public class Positioner : MVRScript
 
         JSONClass jsonObject = base.GetJSON(includePhysical, includeAppearance, forceStore);
 
-        // Store Camera Titles from MonitorCoordinatesStringDictionary
+        // Store Camera Titles from MonitorCoordinatesStringListionary
         JSONArray cameraTitlesArray = new JSONArray();
 
-        foreach (string cameraTitle in MonitorCoordinatesStringDict.Keys)
+        foreach (string cameraTitle in MonitorCoordinatesStringList.Keys)
         {
             cameraTitlesArray.Add(cameraTitle);
         }
@@ -113,9 +113,9 @@ public class Positioner : MVRScript
 
         jsonObject["MonitorCoordinatesCameraTitles"] = cameraTitlesArray;
 
-        // Store Camera Coordinates from MonitorCoordinatesStringDictionary
+        // Store Camera Coordinates from MonitorCoordinatesStringListionary
         JSONArray monitorCoordsArray = new JSONArray();
-        foreach (string coord in MonitorCoordinatesStringDict.Values)
+        foreach (string coord in MonitorCoordinatesStringList.Values)
         {
             monitorCoordsArray.Add(coord);
         }
@@ -140,26 +140,26 @@ public class Positioner : MVRScript
         // only do this, if we actually have something to restore
         if (cameraTitlesArray.Count > 0)
         {
-            MonitorCoordinatesStringDict.Clear();
+            MonitorCoordinatesStringList.Clear();
 
             // Fill our Dictionary with the saved coordinates
             for (int i = 0; i<cameraTitlesArray.Count;i++)
             {
-                MonitorCoordinatesStringDict.Add(cameraTitlesArray[i], coordsArray[i]);
+                MonitorCoordinatesStringList.Add(cameraTitlesArray[i], coordsArray[i]);
             }
 
-            SuperController.LogMessage($"AFTER Load stringlist count: " + MonitorCoordinatesStringDict.Count);
+            SuperController.LogMessage($"AFTER Load stringlist count: " + MonitorCoordinatesStringList.Count);
 
             // Fill the slider with the camera titles , so we can select the coordinates from the dictionary
-            monitorPositionChoices.Clear();
-            foreach (string key in MonitorCoordinatesStringDict.Keys)
+            monitorPositionCameraTitles.Clear();
+            foreach (string key in MonitorCoordinatesStringList.Keys)
             {
-                monitorPositionChoices.Add(key);
+                monitorPositionCameraTitles.Add(key);
             }
 
             MonitorPositionChooser.valNoCallback = "";
             MonitorPositionChooser.choices = null; // force UI sync
-            MonitorPositionChooser.choices = monitorPositionChoices;
+            MonitorPositionChooser.choices = monitorPositionCameraTitles;
 
             // default to first item
             MonitorPositionChooser.val = cameraTitlesArray[0];
@@ -171,7 +171,7 @@ public class Positioner : MVRScript
     // This happens when the button add coords is pressed
     protected void OnAddNewCoords()
     {
-        // string cameraTitle = MonitorCoordinatesStringDict.Count.ToString();
+        // string cameraTitle = MonitorCoordinatesStringList.Count.ToString();
         string cameraTitle = CameraTitleInputFieldUI.text;
 
         var sc = SuperController.singleton;
@@ -186,7 +186,7 @@ public class Positioner : MVRScript
         MonitorCoordinates tmpCoords = new MonitorCoordinates(centerCameraPosition, monitorCenterCameraRotation);
 
         // We add the coordinates to a string list, so at each position in the list (ID), we have a set of coordinates
-        MonitorCoordinatesStringDict.Add(cameraTitle, tmpCoords.MonitorCoordsToString());
+        MonitorCoordinatesStringList.Add(cameraTitle, tmpCoords.MonitorCoordsToString());
 
         RefreshSelectors(cameraTitle);
 
@@ -227,7 +227,7 @@ public class Positioner : MVRScript
 
         // get string from list by id
         
-        string coordsString = MonitorCoordinatesStringDict[cameraTitle];
+        string coordsString = MonitorCoordinatesStringList[cameraTitle];
 
         string[] coordsStringArray = coordsString.Split('_');
 
@@ -289,9 +289,9 @@ public class Positioner : MVRScript
         // SuperController.LogMessage("updating textfield");
 
         // check if the dictionary contains the key, if so, update the coord textfield
-        if (MonitorCoordinatesStringDict.ContainsKey(cameraTitle))
+        if (MonitorCoordinatesStringList.ContainsKey(cameraTitle))
         {
-            CoordsTextInputFieldUI.text = MonitorCoordinatesStringDict[cameraTitle];
+            CoordsTextInputFieldUI.text = MonitorCoordinatesStringList[cameraTitle];
             CoordsTextUI.val = CoordsTextInputFieldUI.text;
         }
         else
@@ -303,12 +303,12 @@ public class Positioner : MVRScript
     protected void RefreshSelectors(string cameraTitle)
     {
         // we need to add our monitor id to the choice selector
-        monitorPositionChoices.Add(cameraTitle);
+        monitorPositionCameraTitles.Add(cameraTitle);
 
         // Update selector
         MonitorPositionChooser.valNoCallback = "";
         MonitorPositionChooser.choices = null; // force UI sync
-        MonitorPositionChooser.choices = monitorPositionChoices;
+        MonitorPositionChooser.choices = monitorPositionCameraTitles;
         MonitorPositionChooser.val = cameraTitle;
 
         // Now that we've added the camera title to the selector, let's suggest the next title
