@@ -23,8 +23,6 @@ public class Positioner : MVRScript
     protected UIDynamicTextField UICameraSectionTitle;
     protected List<UIDynamic> coordsComponentsUI = new List<UIDynamic>();
 
-    protected Dictionary<string, string> testDict = new Dictionary<string, string>();
-
     protected bool isInit = false;
 
     private JSONStorableBool _spawnOnEnable;
@@ -220,7 +218,6 @@ public class Positioner : MVRScript
     }
 
     // Read the coordinates from the UI text field and set the camera to that position
-
     protected void OnSetCoordsAction(string cameraTitle)
     {
         SuperController.LogMessage("Trying to set coords for id requested by foreign action: '" + cameraTitle + "'");
@@ -293,8 +290,6 @@ public class Positioner : MVRScript
 
     public void UpdateTextFields(string cameraTitle)
     {
-        SuperController.LogMessage("updating textfield with:" + cameraTitle);
-
         // check if the titles list contains the cameraTitle, if so, update the coord textfield
         for (int i = 0; i < MonitorPositionCameraTitles.Count; i++)
         {
@@ -305,18 +300,10 @@ public class Positioner : MVRScript
                 break;
             }
         }
-
-        CameraTitleInputFieldUI.text = cameraTitle;
-        CameraTextUI.val = cameraTitle;
     }
 
     protected void RefreshSelectors(string cameraTitle)
     {
-        // we need to add our monitor id to the choice selector
-        // MonitorPositionCameraTitles.Add(cameraTitle);
-
-        SuperController.LogMessage("refresh selector with:" + cameraTitle);
-
         // Update selector
         MonitorPositionChooser.valNoCallback = "";
         MonitorPositionChooser.choices = null; // force UI sync
@@ -327,8 +314,6 @@ public class Positioner : MVRScript
         string nextCameraName = GetNextCameraName(cameraTitle);
         CameraTitleInputFieldUI.text = nextCameraName;
         CameraTextUI.val = nextCameraName;
-
-        SuperController.LogMessage("suggesting:" + nextCameraName);
     }
 
     protected string GetNextCameraName(string cameraTitle)
@@ -339,15 +324,13 @@ public class Positioner : MVRScript
         if (match.Success)
         {
             string lastNumber = match.Value;
-            int lasterNumberInt = Int32.Parse(lastNumber);
-            lasterNumberInt++;
-            return cameraTitle.Replace(lastNumber, lasterNumberInt.ToString());
-            //Console.WriteLine("Last Number: " + lastNumber);
+            int lastNumberInt = Int32.Parse(lastNumber);
+            lastNumberInt++;
+            return cameraTitle.Replace(lastNumber, lastNumberInt.ToString());
         }
         else
         {
             return cameraTitle+"1";
-            //Console.WriteLine("No number found at the end of the string.");
         }
     }
 
@@ -360,6 +343,7 @@ public class Positioner : MVRScript
     protected void CreateCoordsUIelements()
     {
         CoordsTextUI = new JSONStorableString("CoordsTextUI", "_default_") { isStorable = false, isRestorable = false };
+        CameraTextUI = new JSONStorableString("CameraTextUI", "_default_") { isStorable = false, isRestorable = false };
 
         // Temporary vars
         UIDynamicTextField tmpTextfield;
