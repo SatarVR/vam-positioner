@@ -18,6 +18,8 @@ public class Positioner : MVRScript
     protected UIDynamicTextField coordsTextTitle;
     protected List<UIDynamic> coordsComponentsUI = new List<UIDynamic>();
 
+    protected Dictionary<string, string> testDict = new Dictionary<string, string>();
+
     protected bool isInit = false;
 
     private JSONStorableBool _spawnOnEnable;
