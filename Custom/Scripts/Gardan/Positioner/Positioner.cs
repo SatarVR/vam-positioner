@@ -1,19 +1,8 @@
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.XR;
 using System;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Collections;
 using System.Collections.Generic;
 using SimpleJSON;
-using System.Linq;
-using System.IO;
-using MeshVR;
-using MVR.FileManagementSecure;
-using Request = MeshVR.AssetLoader.AssetBundleFromFileRequest;
-using AssetBundles;
-using MVR;
 
 public class Positioner : MVRScript
 {
@@ -88,30 +77,33 @@ public class Positioner : MVRScript
 
         int dialogIdInt = Int32.Parse(dialogId);
         DialogTextInputFieldUI.text = MonitorCoordinatesStringList[dialogIdInt];
+        DialogTextUI.val = DialogTextInputFieldUI.text;
     }
 
     protected void RefreshSelectors(string dialogId)
     {
         SuperController.LogMessage($"refreshing selector");
+        SuperController.LogMessage($"MonitorPositionSelector.val1: " + MonitorPositionSelector.val);
+        SuperController.LogMessage($"MonitorPositionSelector.valNoCallback1: " + MonitorPositionSelector.valNoCallback);
 
         // we need to add our monitor id to the choice selector
         monitorPositionChoices.Add(dialogId);
 
         MonitorPositionSelector.valNoCallback = "";
+        MonitorPositionSelector.choices = null; // force UI sync
         MonitorPositionSelector.choices = monitorPositionChoices;
-        MonitorPositionSelector.val = "" + dialogId;
+        MonitorPositionSelector.val = dialogId;
 
         SuperController.LogMessage($"monitor position choices: " + MonitorPositionSelector.choices.Count);
         SuperController.LogMessage($"first monitor position choice: " + MonitorPositionSelector.choices[0]);
         SuperController.LogMessage($"last monitor position choice: " + MonitorPositionSelector.choices[MonitorPositionSelector.choices.Count - 1]);
+        SuperController.LogMessage($"MonitorPositionSelector.val2: " + MonitorPositionSelector.val);
+        
     }
 
     protected void OnToggleDialogId(string dialogId)
     {
         SuperController.LogMessage($"Dialog id was toggled, isinit? " + isInit);
-
-        // TODO: maybe remove this?
-        if (isInit == false) return;
 
         // here we get the selected dialog ID and want to update the text field
         UpdateTextField(dialogId);
