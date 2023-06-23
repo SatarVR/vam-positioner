@@ -54,7 +54,18 @@ public class Positioner : MVRScript
         DSelsp.labelWidth = 250f;
         globalControlsUIs.Add((UIDynamic)DSelsp);
 
-        SuperController.singleton.BroadcastMessage("OnActionsProviderAvailable", this, SendMessageOptions.DontRequireReceiver);
+        // SuperController.singleton.BroadcastMessage("OnActionsProviderAvailable", this, SendMessageOptions.DontRequireReceiver);
+
+        // ******* CREATING MAIN TRIGGERS/ACTIONS ********
+        // They are here to be displayed on TOP of every other JSONStorables
+        JSONStorableAction fakeFuncUseBelow = new JSONStorableAction("- - - - Use these functions below ↓ - - - - -", () => {});
+        RegisterAction(fakeFuncUseBelow);
+
+        // This should show an action so that the monitor ID can be selected and called from another plugin
+        JSONStorableStringChooser A_SetMonitorCoords = new JSONStorableStringChooser("Set Camera Position", monitorPositionChoices, "", "Set Camera Position") 
+        {isStorable=false,isRestorable=false};
+        A_SetMonitorCoords.setCallbackFunction += (val) => { OnSetCoordsAction( val ); };
+        RegisterStringChooser(A_SetMonitorCoords);
 
 
         StartCoroutine(InitDeferred());
@@ -160,6 +171,37 @@ public class Positioner : MVRScript
     protected void SetCoords()
     {
         string[] coordsStringArray = CoordsTextInputFieldUI.text.Split('_');
+
+        if (coordsStringArray.Length == 6)
+        {
+            try
+            {
+                Vector3 newCenterCameraPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
+                Vector3 newMonitorCenterCameraRotation = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
+
+                SetCoords(newCenterCameraPosition, newMonitorCenterCameraRotation);
+            }
+            catch (Exception e)
+            {
+                SuperController.LogError($"Could not parse coordinates from the text field.");
+                SuperController.LogError(e.Message);
+            }
+        }
+        else
+        {
+            SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
+        }
+    }
+
+        // Read the coordinates from the UI text field and set the camera to that position
+    protected void OnSetCoordsAction(string CoordsId)
+    {
+        SuperController.LogMessage("Trying to set coords for id requested by foreign action: '" + CoordsId + "'");
+
+        // get string from list by id
+        string coordsString = MonitorCoordinatesStringList[Int32.Parse(CoordsId)];
+
+        string[] coordsStringArray = coordsString.Split('_');
 
         if (coordsStringArray.Length == 6)
         {
