@@ -207,6 +207,22 @@ public class Positioner : MVRScript
         UpdateTextFields(cameraTitle);
     }
 
+    private void DeleteCoords()
+    {
+        // TODO implement feature
+
+        // get current camera
+
+        // get index of current camera and coords
+
+        // shuffle everything > deleted index
+
+        // refresh 
+        
+        // update fields
+
+    }
+
     // Read the coordinates from the UI text field and set the camera to that position
     protected void SetCoords()
     {
@@ -361,7 +377,7 @@ public class Positioner : MVRScript
                     {
                         // Get the next camera
                         i++;
-                        SuperController.LogMessage($"Next camera i: '" + i +"'");
+                        // SuperController.LogMessage($"Next camera i: '" + i +"'");
                     }
                     else
                     {
@@ -557,6 +573,10 @@ public class Positioner : MVRScript
         setCoordsBtn.button.onClick.AddListener(() => { SetCoords(); });
         globalControlsUIs.Add((UIDynamic)setCoordsBtn);
 
+        // delete button
+        UIDynamicButton deleteCoordsBtn = CreateButton("Delete selected coords (not implemented yet)", true);
+        deleteCoordsBtn.button.onClick.AddListener(() => { DeleteCoords(); });
+        globalControlsUIs.Add((UIDynamic)deleteCoordsBtn);
 
         // ******* CAMERA CHOOSER  ***********
         MonitorPositionCameraTitles = new List<string>();
@@ -615,6 +635,8 @@ public class Positioner : MVRScript
         helpWindow.height = 850.0f;
         globalControlsUIs.Add((UIDynamic)helpWindow);
     }
+
+
 
     private void SetupTextField(UIDynamicTextField target, float fieldHeight, bool disableBackground = true, bool disableScroll = true)
     {
