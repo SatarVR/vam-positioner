@@ -5,6 +5,7 @@ using System.Collections;
 using System.Collections.Generic;
 using SimpleJSON;
 using System.Text.RegularExpressions;
+using UnityEngine.EventSystems;
 
 public class Positioner : MVRScript
 {
@@ -23,6 +24,7 @@ public class Positioner : MVRScript
     protected UIDynamicTextField UICoordsSectionTitle;
     protected UIDynamicTextField UICameraSectionTitle;
     protected List<UIDynamic> coordsComponentsUI = new List<UIDynamic>();
+    string selectedMonitorChooserTitle = "";
 
     protected bool isInit = false;
 
@@ -60,13 +62,30 @@ public class Positioner : MVRScript
         JSONStorableAction fakeFuncUseBelow = new JSONStorableAction("- - - - Use these functions below ↓ - - - - -", () => { });
         RegisterAction(fakeFuncUseBelow);
 
-        // This should show an action so that the monitor ID can be selected and called from another plugin
+        // Add action to show the selected camera
         JSONStorableStringChooser A_SetMonitorCoords = new JSONStorableStringChooser("Set Camera Position", MonitorPositionCameraTitles, "", "Set Camera Position")
         { isStorable = false, isRestorable = false };
         A_SetMonitorCoords.setCallbackFunction += (val) => { OnSetCoordsAction(val); };
         RegisterStringChooser(A_SetMonitorCoords);
+
+        // This should show an action so that the monitor ID can be selected and called from another plugin
+        SetupAction(this,"Set Random Camera Position", OnSetCoordsActionRandom);
+
+        // This should show an action so that the monitor ID can be selected and called from another plugin
+        SetupAction(this,"Set Next Camera Position", OnSetCoordsActionNext);
+
+        // This should show an action so that the monitor ID can be selected and called from another plugin
+        SetupAction(this,"Set Next Camera Position Loop", OnSetCoordsActionNextLoop);
+
     }
 
+    // Create input action trigger
+    public static JSONStorableAction SetupAction(MVRScript script, string name, JSONStorableAction.ActionCallback callback)
+    {
+        JSONStorableAction action = new JSONStorableAction(name, callback);
+        script.RegisterAction(action);
+        return action;
+    }
 
     // Got this from AcidBubbles code, kudos.
     private IEnumerator InitDeferred()
@@ -214,7 +233,7 @@ public class Positioner : MVRScript
         }
     }
 
-    // Read the coordinates from the UI text field and set the camera to that position
+    // Lookup the coordinates from the list (by title) and set the camera to that position
     protected void OnSetCoordsAction(string cameraTitle)
     {
         // get string from list by id
@@ -253,6 +272,8 @@ public class Positioner : MVRScript
                 SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
             }
         }
+
+        selectedMonitorChooserTitle = cameraTitle;
     }
 
     // Here we get the coordinates via parameters set the camera to that position
@@ -284,6 +305,168 @@ public class Positioner : MVRScript
         monitorCenterCameraTransform.localEulerAngles = new Vector3(monitorCenterCameraTransform.localEulerAngles.x, 0, 0);
     }
 
+    protected void OnSetCoordsActionRandom()
+    {
+        string coordsString = "";
+
+        // get a random camera from the list
+        int randomListIndex = UnityEngine.Random.Range(0, MonitorCoordinatesStringList.Count);
+        {
+            coordsString = MonitorCoordinatesStringList[randomListIndex];
+        }
+
+        string[] coordsStringArray = coordsString.Split('_');
+
+        // sometimes this array has only length 1 (empty string), can't figure out why, it works anyway, no need to bother the user about it.
+        if (coordsStringArray.Length > 1)
+        {
+            if (coordsStringArray.Length == 6)
+            {
+                try
+                {
+                    Vector3 newCenterCameraPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
+                    Vector3 newMonitorCenterCameraRotation = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
+
+                    SetCoords(newCenterCameraPosition, newMonitorCenterCameraRotation);
+                    selectedMonitorChooserTitle = MonitorPositionCameraTitles[randomListIndex];
+                }
+                catch (Exception e)
+                {
+                    SuperController.LogError($"Could not parse coordinates from the text field.");
+                    SuperController.LogError(e.Message);
+                }
+            }
+            else
+            {
+                SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
+            }
+        }
+    }
+
+    // Lookup the coordinates from the list (by title) and get the next list item. Stops at the last item in the list.
+    protected void OnSetCoordsActionNext()
+    {
+        // get current selected camera
+        string cameraTitle = selectedMonitorChooserTitle;
+
+        if (!string.IsNullOrEmpty(cameraTitle))
+        {
+            // get string from list by id
+            string coordsString = "";
+            for (int i = 0; i < MonitorPositionCameraTitles.Count; i++)
+            {
+                if (MonitorPositionCameraTitles[i] == cameraTitle)
+                {
+                    if (i < MonitorPositionCameraTitles.Count)
+                    {
+                        // Get the next camera
+                        i++;
+                        SuperController.LogMessage($"Next camera i: '" + i +"'");
+                    }
+                    else
+                    {
+                        // if this is the last camera in the list, give back the last camera
+                    }
+
+                    coordsString = MonitorCoordinatesStringList[i];
+                    selectedMonitorChooserTitle = MonitorPositionCameraTitles[i];
+                    break;
+                }
+            }
+
+            string[] coordsStringArray = coordsString.Split('_');
+
+            // sometimes this array has only length 1 (empty string), can't figure out why, it works anyway, no need to bother the user about it.
+            if (coordsStringArray.Length > 1)
+            {
+                if (coordsStringArray.Length == 6)
+                {
+                    try
+                    {
+                        Vector3 newCenterCameraPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
+                        Vector3 newMonitorCenterCameraRotation = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
+
+                        SetCoords(newCenterCameraPosition, newMonitorCenterCameraRotation);
+                    }
+                    catch (Exception e)
+                    {
+                        SuperController.LogError($"Could not parse coordinates from the text field.");
+                        SuperController.LogError(e.Message);
+                    }
+                }
+                else
+                {
+                    SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
+                }
+            }
+        }
+        else
+        {
+             SuperController.LogMessage($"MonitorPositionChooser.val was empty or null.");
+        }
+    }
+
+    // Lookup the coordinates from the list (by title) and get the next list item. Stops at the last item in the list.
+    protected void OnSetCoordsActionNextLoop()
+    {
+
+        // get current selected camera
+        string cameraTitle = selectedMonitorChooserTitle;
+
+        if (!string.IsNullOrEmpty(cameraTitle))
+        {
+
+            // get string from list by id
+            string coordsString = "";
+            for (int i = 0; i < MonitorPositionCameraTitles.Count; i++)
+            {
+                if (MonitorPositionCameraTitles[i] == cameraTitle)
+                {
+                    if (i < MonitorPositionCameraTitles.Count - 1)
+                    {
+                        // Get the next camera
+                        i++;
+                    }
+                    else
+                    {
+                        // if this is the last camera in the list, begin at the start again
+                        i = 0;
+                    }
+
+                    coordsString = MonitorCoordinatesStringList[i];
+                    selectedMonitorChooserTitle = MonitorPositionCameraTitles[i];
+                    break;
+                }
+            }
+
+            string[] coordsStringArray = coordsString.Split('_');
+
+            // sometimes this array has only length 1 (empty string), can't figure out why, it works anyway, no need to bother the user about it.
+            if (coordsStringArray.Length > 1)
+            {
+                if (coordsStringArray.Length == 6)
+                {
+                    try
+                    {
+                        Vector3 newCenterCameraPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
+                        Vector3 newMonitorCenterCameraRotation = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
+
+                        SetCoords(newCenterCameraPosition, newMonitorCenterCameraRotation);
+                    }
+                    catch (Exception e)
+                    {
+                        SuperController.LogError($"Could not parse coordinates from the text field.");
+                        SuperController.LogError(e.Message);
+                    }
+                }
+                else
+                {
+                    SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
+                }
+            }
+        }
+    }
+
     public void UpdateTextFields(string cameraTitle)
     {
         // check if the titles list contains the cameraTitle, if so, update the coord textfield
@@ -296,6 +479,8 @@ public class Positioner : MVRScript
                 break;
             }
         }
+
+        selectedMonitorChooserTitle = cameraTitle;
     }
 
     protected void RefreshSelectors(string cameraTitle)
