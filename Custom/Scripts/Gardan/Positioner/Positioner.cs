@@ -11,14 +11,12 @@ public class Positioner : MVRScript
     protected Atom ContainingAtom;
     protected JSONStorableBool IsPositionerHost;
     protected List<string> GroupList = new List<string>();
-
     protected List<MonitorCoordinates> MonitorCoordinatesList = new List<MonitorCoordinates>();
-
     protected JSONStorableStringChooser MonitorPositionChooser;
     protected JSONStorableStringChooser GroupChooser;
     protected List<UIDynamic> globalControlsUIs = new List<UIDynamic>();
-    public JSONStorableString CoordsTextUI;
-    public JSONStorableString CameraTextUI;
+    protected JSONStorableString CoordsTextUI;
+    protected JSONStorableString CameraTextUI;
     protected JSONStorableString HelpText;
     protected InputField CoordsTextInputFieldUI;
     protected InputField CameraTitleInputFieldUI;
@@ -447,7 +445,39 @@ public class Positioner : MVRScript
 
     protected void OnSetCoordsActionRandomSpecificGroup(string groupId)
     {
-        SuperController.LogError("OnSetCoordsActionRandomSpecificGroup not implemented yet, TODO");
+        string coordsAsString = "";
+
+        // count max random number
+        int maxRandomNumber = 0;
+
+        for (int i = 0; i < MonitorCoordinatesList.Count; i++)
+        {
+            if (MonitorCoordinatesList[i].GroupId == groupId)
+            {
+                maxRandomNumber++;
+            }
+        }
+
+        // get a random camera from the list within the group
+        int randomListIndex = UnityEngine.Random.Range(0, maxRandomNumber);
+        int counter = 0;
+        for (int i = 0; i < MonitorCoordinatesList.Count; i++)
+        {
+            if (MonitorCoordinatesList[i].GroupId == groupId)
+            {
+                if (counter == randomListIndex)
+                {
+                    coordsAsString = MonitorCoordinatesList[randomListIndex].CoordinatesAsString;
+                    break;
+                }
+                counter++;
+            }
+        }
+
+        MonitorCoordinates tmpMonitorCoordinates = CreateMonitorCoordinatesFromString(coordsAsString, "");
+
+        SetCoords(tmpMonitorCoordinates.MonitorPosition, tmpMonitorCoordinates.MonitorRotation.eulerAngles);
+        SelectedMonitorChooserTitle = MonitorCoordinatesList[randomListIndex].MonitorCameraTitle;
     }
 
     // Lookup the coordinates from the list (by title) and get the next list item. Stops at the last item in the list.
@@ -585,8 +615,6 @@ public class Positioner : MVRScript
     private void OnCameraTitleTextChanged()
     {
         CoordsTextUI.val = CameraTitleInputFieldUI.text;
-        // TODO ok when we change the camera title text field, we should update the coords value in the list, if it already exists
-        // actually only do this when pressing an update button, otherwise it happens on every keystroke
     }
 
     protected void OnCoordsTextChanged()
@@ -729,6 +757,9 @@ public class Positioner : MVRScript
     {
         SuperController.LogError("DeleteGroup is not implemented yet. TODO");
         // TODO if it is last group, don't delete it
+
+        
+
     }
 
     private void OnAddNewGroup()
@@ -906,71 +937,80 @@ public class Positioner : MVRScript
     {
         //SuperController.LogMessage("CreateMonitorCoordinatesFromString started");
 
-        string groupId = "0";
-        string cameraTitle = "";
-
-        // parse coords string to Vector 3 and Transform
-        Vector3 monitorPosition = new Vector3();
-
-        var sc = SuperController.singleton;
-        Transform monitorRotation = sc.MonitorCenterCamera.transform;
-
-        //SuperController.LogMessage("coordsAsString: " + coordsAsString);
-
-        string[] coordsStringArray = coordsAsString.Split('_');
-
-        MonitorCoordinates newMonitorCoords = null;
-
-        if (coordsStringArray.Length == 8)
+        if (!string.IsNullOrEmpty(coordsAsString))
         {
-            try
-            {
-                groupId = coordsStringArray[0].ToString();
-                cameraTitle = coordsStringArray[1].ToString();
-                monitorPosition = new Vector3(float.Parse(coordsStringArray[2]), float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]));
-                monitorRotation.eulerAngles = new Vector3(float.Parse(coordsStringArray[5]), float.Parse(coordsStringArray[6]), float.Parse(coordsStringArray[7]));
 
-                //SuperController.LogMessage("creating tmp monitorcoords object: " + groupId);
-                //SuperController.LogMessage("creating tmp monitorcoords object: " + cameraTitle);
-                //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorPosition);
-                //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorRotation);
-                newMonitorCoords = new MonitorCoordinates(groupId, cameraTitle, monitorPosition, monitorRotation);
-            }
-            catch (Exception e)
-            {
-                SuperController.LogError($"Could not parse coordinates from the text field.");
-                SuperController.LogError(e.Message);
-            }
-        }
-        // This is for restoring camera positions from save files with version < 4.
-        else if (coordsStringArray.Length == 6)
-        {
-            try
-            {
-                //SuperController.LogMessage("restoring coordinates from old save file version.");
+            string groupId = "0";
+            string cameraTitle = "";
 
-                groupId = "0";
-                cameraTitle = cameraTitleForOldSaveFileVersion;
-                monitorPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
-                monitorRotation.eulerAngles = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
+            // parse coords string to Vector 3 and Transform
+            Vector3 monitorPosition = new Vector3();
 
-                //SuperController.LogMessage("creating tmp monitorcoords object: " + groupId);
-                //SuperController.LogMessage("creating tmp monitorcoords object: " + cameraTitle);
-                //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorPosition);
-                //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorRotation);
-                newMonitorCoords = new MonitorCoordinates(groupId, cameraTitle, monitorPosition, monitorRotation);
-            }
-            catch (Exception e)
+            var sc = SuperController.singleton;
+            Transform monitorRotation = sc.MonitorCenterCamera.transform;
+
+            //SuperController.LogMessage("coordsAsString: " + coordsAsString);
+
+            string[] coordsStringArray = coordsAsString.Split('_');
+
+            MonitorCoordinates newMonitorCoords = null;
+
+            if (coordsStringArray.Length == 8)
             {
-                SuperController.LogError($"Could not parse coordinates from the text field.");
-                SuperController.LogError(e.Message);
+                try
+                {
+                    groupId = coordsStringArray[0].ToString();
+                    cameraTitle = coordsStringArray[1].ToString();
+                    monitorPosition = new Vector3(float.Parse(coordsStringArray[2]), float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]));
+                    monitorRotation.eulerAngles = new Vector3(float.Parse(coordsStringArray[5]), float.Parse(coordsStringArray[6]), float.Parse(coordsStringArray[7]));
+
+                    //SuperController.LogMessage("creating tmp monitorcoords object: " + groupId);
+                    //SuperController.LogMessage("creating tmp monitorcoords object: " + cameraTitle);
+                    //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorPosition);
+                    //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorRotation);
+                    newMonitorCoords = new MonitorCoordinates(groupId, cameraTitle, monitorPosition, monitorRotation);
+                }
+                catch (Exception e)
+                {
+                    SuperController.LogError($"Could not parse coordinates from the text field.");
+                    SuperController.LogError(e.Message);
+                }
             }
+            // This is for restoring camera positions from save files with version < 4.
+            else if (coordsStringArray.Length == 6)
+            {
+                try
+                {
+                    //SuperController.LogMessage("restoring coordinates from old save file version.");
+
+                    groupId = "0";
+                    cameraTitle = cameraTitleForOldSaveFileVersion;
+                    monitorPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
+                    monitorRotation.eulerAngles = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
+
+                    //SuperController.LogMessage("creating tmp monitorcoords object: " + groupId);
+                    //SuperController.LogMessage("creating tmp monitorcoords object: " + cameraTitle);
+                    //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorPosition);
+                    //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorRotation);
+                    newMonitorCoords = new MonitorCoordinates(groupId, cameraTitle, monitorPosition, monitorRotation);
+                }
+                catch (Exception e)
+                {
+                    SuperController.LogError($"Could not parse coordinates from the text field.");
+                    SuperController.LogError(e.Message);
+                }
+            }
+            else
+            {
+                SuperController.LogError($"Could not parse coordinates from the text field, need exactly 8 fields: groupId, cameraTitle and 6 coordinates (position x,y,z and rotation x,y,z).");
+            }
+
+            return newMonitorCoords;
         }
         else
         {
-            SuperController.LogError($"Could not parse coordinates from the text field, need exactly 8 fields: groupId, cameraTitle and 6 coordinates (position x,y,z and rotation x,y,z).");
+            SuperController.LogError($"Got an empty string coordinates to parse, returning null.");
+            return null;
         }
-
-        return newMonitorCoords;
     }
 }
