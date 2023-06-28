@@ -5,12 +5,11 @@ using System.Collections;
 using System.Collections.Generic;
 using SimpleJSON;
 using System.Text.RegularExpressions;
-using UnityEngine.EventSystems;
 
 public class Positioner : MVRScript
 {
-    private Atom _containingAtom;
-    private JSONStorableBool _isPositionerHost;
+    protected Atom ContainingAtom;
+    protected JSONStorableBool IsPositionerHost;
     protected List<string> MonitorCoordinatesStringList = new List<string>();
     protected List<string> MonitorPositionCameraTitles;
     protected JSONStorableStringChooser MonitorPositionChooser;
@@ -24,17 +23,16 @@ public class Positioner : MVRScript
     protected UIDynamicTextField UICoordsSectionTitle;
     protected UIDynamicTextField UICameraSectionTitle;
     protected List<UIDynamic> coordsComponentsUI = new List<UIDynamic>();
-    string selectedMonitorChooserTitle = "";
+    protected string SelectedMonitorChooserTitle = "";
+    protected JSONStorableBool SetCameraPositionOnEnable;
 
     protected bool isInit = false;
-
-    private JSONStorableBool _setCameraPositionOnEnable;
 
     public override void Init()
     {
         isInit = true;
 
-        _containingAtom = containingAtom;
+        ContainingAtom = containingAtom;
 
         // Create UI elements
         CreateCoordsUIelements();
@@ -50,6 +48,10 @@ public class Positioner : MVRScript
         if (enabled)
         {
             OnEnable();
+        }
+        else
+        {
+            OnDisable();
         }
 
         isInit = false;
@@ -69,13 +71,13 @@ public class Positioner : MVRScript
         RegisterStringChooser(A_SetMonitorCoords);
 
         // This should show an action so that the monitor ID can be selected and called from another plugin
-        SetupAction(this,"Set Random Camera Position", OnSetCoordsActionRandom);
+        SetupAction(this, "Set Random Camera Position", OnSetCoordsActionRandom);
 
         // This should show an action so that the monitor ID can be selected and called from another plugin
-        SetupAction(this,"Set Next Camera Position", OnSetCoordsActionNext);
+        SetupAction(this, "Set Next Camera Position", OnSetCoordsActionNext);
 
         // This should show an action so that the monitor ID can be selected and called from another plugin
-        SetupAction(this,"Set Next Camera Position Loop", OnSetCoordsActionNextLoop);
+        SetupAction(this, "Set Next Camera Position Loop", OnSetCoordsActionNextLoop);
 
     }
 
@@ -92,11 +94,11 @@ public class Positioner : MVRScript
     {
         yield return new WaitForEndOfFrame();
         if (!enabled) yield break;
-        if (_setCameraPositionOnEnable.val)
+        if (SetCameraPositionOnEnable.val)
             SetCoords();
         yield return 0;
         if (!enabled) yield break;
-        if (_setCameraPositionOnEnable.val)
+        if (SetCameraPositionOnEnable.val)
             SetCoords();
     }
 
@@ -218,7 +220,7 @@ public class Positioner : MVRScript
         // shuffle everything > deleted index
 
         // refresh 
-        
+
         // update fields
 
     }
@@ -289,7 +291,7 @@ public class Positioner : MVRScript
             }
         }
 
-        selectedMonitorChooserTitle = cameraTitle;
+        SelectedMonitorChooserTitle = cameraTitle;
     }
 
     // Here we get the coordinates via parameters set the camera to that position
@@ -323,7 +325,7 @@ public class Positioner : MVRScript
 
     protected void OnSetCoordsActionRandom()
     {
-        string coordsString = "";
+        string coordsString;
 
         // get a random camera from the list
         int randomListIndex = UnityEngine.Random.Range(0, MonitorCoordinatesStringList.Count);
@@ -344,7 +346,7 @@ public class Positioner : MVRScript
                     Vector3 newMonitorCenterCameraRotation = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
 
                     SetCoords(newCenterCameraPosition, newMonitorCenterCameraRotation);
-                    selectedMonitorChooserTitle = MonitorPositionCameraTitles[randomListIndex];
+                    SelectedMonitorChooserTitle = MonitorPositionCameraTitles[randomListIndex];
                 }
                 catch (Exception e)
                 {
@@ -363,7 +365,7 @@ public class Positioner : MVRScript
     protected void OnSetCoordsActionNext()
     {
         // get current selected camera
-        string cameraTitle = selectedMonitorChooserTitle;
+        string cameraTitle = SelectedMonitorChooserTitle;
 
         if (!string.IsNullOrEmpty(cameraTitle))
         {
@@ -385,7 +387,7 @@ public class Positioner : MVRScript
                     }
 
                     coordsString = MonitorCoordinatesStringList[i];
-                    selectedMonitorChooserTitle = MonitorPositionCameraTitles[i];
+                    SelectedMonitorChooserTitle = MonitorPositionCameraTitles[i];
                     break;
                 }
             }
@@ -418,7 +420,7 @@ public class Positioner : MVRScript
         }
         else
         {
-             SuperController.LogMessage($"MonitorPositionChooser.val was empty or null.");
+            SuperController.LogMessage($"MonitorPositionChooser.val was empty or null.");
         }
     }
 
@@ -427,7 +429,7 @@ public class Positioner : MVRScript
     {
 
         // get current selected camera
-        string cameraTitle = selectedMonitorChooserTitle;
+        string cameraTitle = SelectedMonitorChooserTitle;
 
         if (!string.IsNullOrEmpty(cameraTitle))
         {
@@ -450,7 +452,7 @@ public class Positioner : MVRScript
                     }
 
                     coordsString = MonitorCoordinatesStringList[i];
-                    selectedMonitorChooserTitle = MonitorPositionCameraTitles[i];
+                    SelectedMonitorChooserTitle = MonitorPositionCameraTitles[i];
                     break;
                 }
             }
@@ -496,7 +498,7 @@ public class Positioner : MVRScript
             }
         }
 
-        selectedMonitorChooserTitle = cameraTitle;
+        SelectedMonitorChooserTitle = cameraTitle;
     }
 
     protected void RefreshSelectors(string cameraTitle)
@@ -553,6 +555,11 @@ public class Positioner : MVRScript
 
     protected void CreateCoordsUIelements()
     {
+        CreateCoordsUIelements(MonitorPositionChooser);
+    }
+
+    protected void CreateCoordsUIelements(JSONStorableStringChooser monitorPositionChooser)
+    {
         CoordsTextUI = new JSONStorableString("CoordsTextUI", "_default_") { isStorable = false, isRestorable = false };
         CameraTextUI = new JSONStorableString("CameraTextUI", "_default_") { isStorable = false, isRestorable = false };
 
@@ -580,7 +587,7 @@ public class Positioner : MVRScript
 
         // ******* CAMERA CHOOSER  ***********
         MonitorPositionCameraTitles = new List<string>();
-        MonitorPositionChooser = new JSONStorableStringChooser("Monitor position ID", MonitorPositionCameraTitles, "", "Monitor position ID");
+        monitorPositionChooser = new JSONStorableStringChooser("Monitor position ID", MonitorPositionCameraTitles, "", "Monitor position ID");
         MonitorPositionChooser.isRestorable = true;
         MonitorPositionChooser.isStorable = true;
         MonitorPositionChooser.storeType = JSONStorableParam.StoreType.Full;
@@ -649,8 +656,12 @@ public class Positioner : MVRScript
 
     public UIDynamicTextField CreateStaticDescriptionText(string DescTitle, string DescText, bool rightSide, int fieldHeight, TextAnchor textAlignment = TextAnchor.UpperLeft)
     {
-        JSONStorableString staticDescString = new JSONStorableString(DescTitle, DescText) { isStorable = false, isRestorable = false };
-        staticDescString.hidden = true;
+        JSONStorableString staticDescString = new JSONStorableString(DescTitle, DescText)
+        {
+            isStorable = false,
+            isRestorable = false,
+            hidden = true
+        };
         UIDynamicTextField staticDescStringField = CreateTextField(staticDescString, rightSide);
         staticDescStringField.backgroundColor = new Color(1f, 1f, 1f, 0f);
         staticDescStringField.UItext.alignment = textAlignment;
@@ -674,17 +685,17 @@ public class Positioner : MVRScript
 
     private void OnEnable()
     {
-        if (_containingAtom == null) return;
-        if (_containingAtom.IsBoolJSONParam("IsPositionerHost")) return;
-        _isPositionerHost = new JSONStorableBool("IsPositionerHost", true);
-        _containingAtom.RegisterBool(_isPositionerHost);
+        if (ContainingAtom == null) return;
+        if (ContainingAtom.IsBoolJSONParam("IsPositionerHost")) return;
+        IsPositionerHost = new JSONStorableBool("IsPositionerHost", true);
+        ContainingAtom.RegisterBool(IsPositionerHost);
     }
 
     private void OnDisable()
     {
-        if (_isPositionerHost == null) return;
-        _containingAtom.DeregisterBool(_isPositionerHost);
-        _isPositionerHost = null;
+        if (IsPositionerHost == null) return;
+        ContainingAtom.DeregisterBool(IsPositionerHost);
+        IsPositionerHost = null;
     }
 
     public void OnDestroy()
