@@ -22,7 +22,6 @@ public class Positioner : MVRScript
     protected JSONStorableString cameraTitle;
     protected UIDynamicTextField UICoordsSectionTitle;
     protected UIDynamicTextField UICameraSectionTitle;
-    protected List<UIDynamic> coordsComponentsUI = new List<UIDynamic>();
     protected string SelectedMonitorChooserTitle = "";
     protected JSONStorableBool SetCameraPositionOnEnable;
 
@@ -206,23 +205,64 @@ public class Positioner : MVRScript
 
         RefreshSelectors(cameraTitle);
 
+        // Now that we've added the camera title to the selector, let's suggest the next title
+        string nextCameraName = SuggestNextCameraName(cameraTitle);
+        CameraTitleInputFieldUI.text = nextCameraName;
+        CameraTextUI.val = nextCameraName;
+
         UpdateTextFields(cameraTitle);
     }
 
     private void DeleteCoords()
     {
-        // TODO implement feature
-
         // get current camera
+        string currentSelectedCamera = SelectedMonitorChooserTitle;
 
+        int currentCameraIndex = -1;
         // get index of current camera and coords
+        for (int i = 0; i < MonitorPositionCameraTitles.Count; i++)
+        {
+            if (MonitorPositionCameraTitles[i] == currentSelectedCamera)
+            {
+                currentCameraIndex = i;
+                break;
+            }
+        }
 
-        // shuffle everything > deleted index
+        if (currentCameraIndex != -1)
+        {
+            MonitorPositionCameraTitles.RemoveAt(currentCameraIndex);
+            MonitorCoordinatesStringList.RemoveAt(currentCameraIndex);
+        }
+        else
+        {
+            SuperController.LogError($"Tried to remove non-existing camera coordinates from list. You can safely ignore this error.");
+        }
 
-        // refresh 
+        // get next possible previous camera name to set after deleting a camera
+        string previousCameraInList = "";
+        bool updateSelectorAndTextfields = true;
+        if (currentCameraIndex - 1 > 0)
+        {
+            previousCameraInList = MonitorPositionCameraTitles[currentCameraIndex - 1];
+        }
+        else if (MonitorPositionCameraTitles.Count > 0)
+        {
+            previousCameraInList = MonitorPositionCameraTitles[0];
+        }
+        else
+        {
+            updateSelectorAndTextfields = false;
+        }
+        
+        if (updateSelectorAndTextfields)
+        {
+            // refresh 
+            RefreshSelectors(previousCameraInList);
 
-        // update fields
-
+            // update fields
+            UpdateTextFields(previousCameraInList);
+        }
     }
 
     // Read the coordinates from the UI text field and set the camera to that position
@@ -508,14 +548,7 @@ public class Positioner : MVRScript
         MonitorPositionChooser.choices = null; // force UI sync
         MonitorPositionChooser.choices = MonitorPositionCameraTitles;
         MonitorPositionChooser.val = cameraTitle;
-
-        // Now that we've added the camera title to the selector, let's suggest the next title
-        string nextCameraName = SuggestNextCameraName(cameraTitle);
-        CameraTitleInputFieldUI.text = nextCameraName;
-        CameraTextUI.val = nextCameraName;
     }
-
-
 
     protected void OnChangeSelectedCameraTitle(string cameraTitle)
     {
@@ -555,11 +588,6 @@ public class Positioner : MVRScript
 
     protected void CreateCoordsUIelements()
     {
-        CreateCoordsUIelements(MonitorPositionChooser);
-    }
-
-    protected void CreateCoordsUIelements(JSONStorableStringChooser monitorPositionChooser)
-    {
         CoordsTextUI = new JSONStorableString("CoordsTextUI", "_default_") { isStorable = false, isRestorable = false };
         CameraTextUI = new JSONStorableString("CameraTextUI", "_default_") { isStorable = false, isRestorable = false };
 
@@ -581,13 +609,13 @@ public class Positioner : MVRScript
         globalControlsUIs.Add((UIDynamic)setCoordsBtn);
 
         // delete button
-        UIDynamicButton deleteCoordsBtn = CreateButton("Delete selected coords (not implemented yet)", true);
+        UIDynamicButton deleteCoordsBtn = CreateButton("Delete selected coords", true);
         deleteCoordsBtn.button.onClick.AddListener(() => { DeleteCoords(); });
         globalControlsUIs.Add((UIDynamic)deleteCoordsBtn);
 
         // ******* CAMERA CHOOSER  ***********
         MonitorPositionCameraTitles = new List<string>();
-        monitorPositionChooser = new JSONStorableStringChooser("Monitor position ID", MonitorPositionCameraTitles, "", "Monitor position ID");
+        MonitorPositionChooser = new JSONStorableStringChooser("Monitor position ID", MonitorPositionCameraTitles, "", "Monitor position ID");
         MonitorPositionChooser.isRestorable = true;
         MonitorPositionChooser.isStorable = true;
         MonitorPositionChooser.storeType = JSONStorableParam.StoreType.Full;
@@ -599,7 +627,7 @@ public class Positioner : MVRScript
 
         // ******* SECTION TITLE ***********
         UICameraSectionTitle = CreateStaticDescriptionText("UICameraSectionTitle", "<color=#000><size=35><b>Next camera name</b></size></color>", false, 55, TextAnchor.MiddleLeft);
-        coordsComponentsUI.Add((UIDynamic)UICameraSectionTitle);
+        globalControlsUIs.Add((UIDynamic)UICameraSectionTitle);
 
         // ******* CAMERA TITLE TEXTFIELD ***********
         cameraTitle = new JSONStorableString("CameraTitle", "0");
@@ -608,14 +636,14 @@ public class Positioner : MVRScript
         CameraTitleInputFieldUI = tmp2Textfield.UItext.gameObject.AddComponent<InputField>();
         CameraTitleInputFieldUI.textComponent = tmp2Textfield.UItext;
         CameraTitleInputFieldUI.lineType = InputField.LineType.SingleLine;
-        coordsComponentsUI.Add((UIDynamic)tmp2Textfield);
+        globalControlsUIs.Add((UIDynamic)tmp2Textfield);
         CoordsTextUI.valNoCallback = "0";
         CameraTitleInputFieldUI.text = "0";
         CameraTitleInputFieldUI.onValueChanged.AddListener(delegate { OnCameraTitleTextChanged(); });
 
         // ******* SECTION TITLE ***********
         UICoordsSectionTitle = CreateStaticDescriptionText("UICoordsSectionTitle", "<color=#000><size=35><b>Camera Coordinates</b></size></color>", false, 55, TextAnchor.MiddleLeft);
-        coordsComponentsUI.Add((UIDynamic)UICoordsSectionTitle);
+        globalControlsUIs.Add((UIDynamic)UICoordsSectionTitle);
 
         // ******* COORDS TEXTFIELD  ***********
         string newDefaultText = "Treat this as a read-only field, don't type in it.";
@@ -625,7 +653,7 @@ public class Positioner : MVRScript
         CoordsTextInputFieldUI = tmpTextfield.UItext.gameObject.AddComponent<InputField>();
         CoordsTextInputFieldUI.textComponent = tmpTextfield.UItext;
         CoordsTextInputFieldUI.lineType = InputField.LineType.MultiLineNewline;
-        coordsComponentsUI.Add((UIDynamic)tmpTextfield);
+        globalControlsUIs.Add((UIDynamic)tmpTextfield);
         CoordsTextUI.valNoCallback = newDefaultText;
         CoordsTextInputFieldUI.text = newDefaultText;
         CoordsTextInputFieldUI.onValueChanged.AddListener(delegate { OnCoordsTextChanged(); });
