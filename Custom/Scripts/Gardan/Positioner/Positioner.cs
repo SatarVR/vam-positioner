@@ -10,8 +10,6 @@ public class Positioner : MVRScript
 {
     protected Atom ContainingAtom;
     protected JSONStorableBool IsPositionerHost;
-    // protected List<string> MonitorCoordinatesStringList = new List<string>();
-    // protected List<string> MonitorPositionCameraTitles;
     protected List<string> GroupList = new List<string>();
 
     protected List<MonitorCoordinates> MonitorCoordinatesList = new List<MonitorCoordinates>();
@@ -159,15 +157,32 @@ public class Positioner : MVRScript
                     string coordsAsString = node.Value;
                     MonitorCoordinates loadedMonitorCoords = CreateMonitorCoordinatesFromString(coordsAsString, "");
                     MonitorCoordinatesList.Add(loadedMonitorCoords);
+
+                    // Recreate Group List
+                    if (!GroupList.Contains(loadedMonitorCoords.GroupId))
+                    {
+                        GroupList.Add(loadedMonitorCoords.GroupId);
+                    }
+                }
+
+                // SuperController.LogMessage("GroupList.Count: " + GroupList.Count);
+
+                // Making sure group list contains at least 1 group
+                if (GroupList.Count == 0)
+                {
+                    GroupList.Add("0");
                 }
 
                 MonitorPositionChooser.valNoCallback = "";
                 MonitorPositionChooser.choices = null; // force UI sync
                 MonitorPositionChooser.choices = GetCameraTitlesStringList(SelectedGroupId, MonitorCoordinatesList);
+                GroupChooser.choices = null; // force UI sync
+                GroupChooser.choices = GroupList;
 
-                // default to 0 for group and position 0 for cameraArray
+                // default to first items for list
+                // GroupChooser.val = "0";
                 MonitorPositionChooser.val = MonitorCoordinatesList[0].MonitorCameraTitle;
-                UpdateTextFields(MonitorCoordinatesList[0].GroupId, MonitorCoordinatesList[0].MonitorCameraTitle);
+                UpdateTextFields("0", MonitorCoordinatesList[0].MonitorCameraTitle);
             }
         }
     }
@@ -175,7 +190,7 @@ public class Positioner : MVRScript
     // Keep this for compatibiliy with save fields < version 4 of the plugin
     public void OldVersionLateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
     {
-        SuperController.LogMessage("old version restore started.");
+        //SuperController.LogMessage("old version restore started.");
 
         if (GroupList.Count == 0)
         {
@@ -196,18 +211,18 @@ public class Positioner : MVRScript
             {
                 string coords = node.Value;
                 MonitorCoordinatesList.Add(new MonitorCoordinates("0", cameraArray[i], coords));
-                SuperController.LogMessage("adding camera coords: " + cameraArray[i]);
+                //SuperController.LogMessage("adding camera coords: " + cameraArray[i]);
                 i++;
             }
 
-            SuperController.LogMessage("setting choices");
+            //SuperController.LogMessage("setting choices");
 
             MonitorPositionChooser.valNoCallback = "";
             MonitorPositionChooser.choices = null; // force UI sync
             MonitorPositionChooser.choices = GetCameraTitlesStringList("0", MonitorCoordinatesList);
             GroupChooser.choices = GroupList;
 
-            SuperController.LogMessage("setting defaults");
+            //SuperController.LogMessage("setting defaults");
 
             // default to first items for list
             GroupChooser.val = "0";
@@ -218,7 +233,7 @@ public class Positioner : MVRScript
 
     protected void AddOrUpdateCameraList(string groupId, string cameraTitle, string coordsAsString)
     {
-        SuperController.LogMessage("addupate started.");
+        //SuperController.LogMessage("addupate started.");
 
         bool titleFoundInList = false;
         for (int i = 0; i < MonitorCoordinatesList.Count; i++)
@@ -236,13 +251,13 @@ public class Positioner : MVRScript
 
         if (!titleFoundInList)
         {
-            SuperController.LogMessage("adding new mc group: " + groupId);
-            SuperController.LogMessage("adding new mc group: " + cameraTitle);
-            SuperController.LogMessage("adding new mc group: " + coordsAsString);
+            //SuperController.LogMessage("adding new mc group: " + groupId);
+            //SuperController.LogMessage("adding new mc group: " + cameraTitle);
+            //SuperController.LogMessage("adding new mc group: " + coordsAsString);
             MonitorCoordinatesList.Add(new MonitorCoordinates(groupId, cameraTitle, coordsAsString));
         }
 
-        SuperController.LogMessage("addupate done, list count:" + MonitorCoordinatesList.Count);
+        //SuperController.LogMessage("addupate done, list count:" + MonitorCoordinatesList.Count);
     }
 
     // This happens when the button "add coords" is pressed
@@ -388,7 +403,7 @@ public class Positioner : MVRScript
     // Here we get the coordinates via parameters set the camera to that position
     protected void SetCoords(Vector3 newCenterCameraPosition, Vector3 newMonitorCenterCameraRotation)
     {
-        // SuperController.LogMessage($"SetCoords called");
+        // //SuperController.LogMessage($"SetCoords called");
 
         var sc = SuperController.singleton;
 
@@ -471,7 +486,7 @@ public class Positioner : MVRScript
         }
         else
         {
-            SuperController.LogMessage($"MonitorPositionChooser.val was empty or null.");
+            //SuperController.LogMessage($"MonitorPositionChooser.val was empty or null.");
         }
     }
 
@@ -512,7 +527,7 @@ public class Positioner : MVRScript
         }
         else
         {
-            SuperController.LogMessage($"MonitorPositionChooser.val was empty or null.");
+            //SuperController.LogMessage($"MonitorPositionChooser.val was empty or null.");
         }
     }
 
@@ -539,7 +554,7 @@ public class Positioner : MVRScript
         GroupChooser.choices = null; // force UI sync
         GroupChooser.choices = GroupList;
 
-        SuperController.LogMessage("GroupList count after refresh: " + GroupList.Count);
+        //SuperController.LogMessage("GroupList count after refresh: " + GroupList.Count);
 
         // Update camera title chooser
         MonitorPositionChooser.valNoCallback = "";
@@ -554,6 +569,8 @@ public class Positioner : MVRScript
 
     private void OnChangeSelectedGroupChoice(string groupId)
     {
+        // TODO when a group is selected, we should default the camera title to the first available camera, unless there are none
+
         SelectedGroupId = groupId;
         RefreshChoosers("");
         UpdateTextFields(groupId, SelectedMonitorChooserTitle);
@@ -717,9 +734,17 @@ public class Positioner : MVRScript
     private void OnAddNewGroup()
     {
         // add new group
-        int nextGroupInt = GroupList.Count;
-        string nextGroupName = nextGroupInt.ToString();
-        GroupList.Add(nextGroupName);
+        string nextGroupName = "0";
+
+        for (int i = 0; i < GroupList.Count; i++)
+        {
+            nextGroupName = i.ToString();
+            if (!GroupList.Contains(nextGroupName))
+            {
+                GroupList.Add(nextGroupName);
+                break;
+            }
+        }
 
         // select group
         SelectedGroupId = nextGroupName;
@@ -733,7 +758,7 @@ public class Positioner : MVRScript
         CoordsTextInputFieldUI.text = "";
         CoordsTextUI.val = "";
 
-        SuperController.LogMessage("GroupList count before refresh: " + GroupList.Count);
+        //SuperController.LogMessage("GroupList count before refresh: " + GroupList.Count);
 
         // update chooser field to only show items that belong to the new group (which should be no items)
         RefreshChoosers("");
@@ -815,7 +840,7 @@ public class Positioner : MVRScript
 
             set
             {
-                SuperController.LogMessage("setter coords started");
+                //SuperController.LogMessage("setter coords started");
                 _coordinatesAsString = value;
                 MonitorCoordinates tmpMonitorCoordinates = CreateMonitorCoordinatesFromString(_coordinatesAsString, "");
                 MonitorPosition = tmpMonitorCoordinates.MonitorPosition;
@@ -825,7 +850,7 @@ public class Positioner : MVRScript
 
         public MonitorCoordinates(string groupId, string monitorCameraTitle, string coordsAsString)
         {
-            SuperController.LogMessage("mc constructor 1 started");
+            //SuperController.LogMessage("mc constructor 1 started");
             GroupId = groupId;
             MonitorCameraTitle = monitorCameraTitle;
             CoordinatesAsString = coordsAsString;
@@ -833,7 +858,7 @@ public class Positioner : MVRScript
 
         public MonitorCoordinates(string groupId, string monitorCameraTitle, Vector3 monitorPosition, Transform monitorRotation)
         {
-            SuperController.LogMessage("mc constructor 2 started");
+            //SuperController.LogMessage("mc constructor 2 started");
             MonitorPosition = monitorPosition;
             MonitorRotation = monitorRotation;
             GroupId = groupId;
@@ -845,7 +870,7 @@ public class Positioner : MVRScript
         // I'm sure there's a fancy way of doing this in JSON
         public string MonitorCoordsToString()
         {
-            SuperController.LogMessage("MonitorCoordsToString started");
+            //SuperController.LogMessage("MonitorCoordsToString started");
             string coordsAsString = GroupId + "_" + MonitorCameraTitle + "_" + MonitorPosition.x + "_" + MonitorPosition.y + "_" + MonitorPosition.z + "_" + MonitorRotation.eulerAngles.x + "_" + MonitorRotation.eulerAngles.y + "_" + MonitorRotation.eulerAngles.z;
             return coordsAsString;
         }
@@ -879,7 +904,7 @@ public class Positioner : MVRScript
 
     private static MonitorCoordinates CreateMonitorCoordinatesFromString(string coordsAsString, string cameraTitleForOldSaveFileVersion)
     {
-        SuperController.LogMessage("CreateMonitorCoordinatesFromString started");
+        //SuperController.LogMessage("CreateMonitorCoordinatesFromString started");
 
         string groupId = "0";
         string cameraTitle = "";
@@ -890,7 +915,7 @@ public class Positioner : MVRScript
         var sc = SuperController.singleton;
         Transform monitorRotation = sc.MonitorCenterCamera.transform;
 
-        SuperController.LogMessage("coordsAsString: " + coordsAsString);
+        //SuperController.LogMessage("coordsAsString: " + coordsAsString);
 
         string[] coordsStringArray = coordsAsString.Split('_');
 
@@ -900,15 +925,15 @@ public class Positioner : MVRScript
         {
             try
             {
-                groupId = coordsAsString[0].ToString();
-                cameraTitle = coordsAsString[1].ToString();
+                groupId = coordsStringArray[0].ToString();
+                cameraTitle = coordsStringArray[1].ToString();
                 monitorPosition = new Vector3(float.Parse(coordsStringArray[2]), float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]));
                 monitorRotation.eulerAngles = new Vector3(float.Parse(coordsStringArray[5]), float.Parse(coordsStringArray[6]), float.Parse(coordsStringArray[7]));
 
-                SuperController.LogMessage("creating tmp monitorcoords object: " + groupId);
-                SuperController.LogMessage("creating tmp monitorcoords object: " + cameraTitle);
-                SuperController.LogMessage("creating tmp monitorcoords object: " + monitorPosition);
-                SuperController.LogMessage("creating tmp monitorcoords object: " + monitorRotation);
+                //SuperController.LogMessage("creating tmp monitorcoords object: " + groupId);
+                //SuperController.LogMessage("creating tmp monitorcoords object: " + cameraTitle);
+                //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorPosition);
+                //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorRotation);
                 newMonitorCoords = new MonitorCoordinates(groupId, cameraTitle, monitorPosition, monitorRotation);
             }
             catch (Exception e)
@@ -922,17 +947,17 @@ public class Positioner : MVRScript
         {
             try
             {
-                SuperController.LogMessage("restoring coordinates from old save file version.");
+                //SuperController.LogMessage("restoring coordinates from old save file version.");
 
                 groupId = "0";
                 cameraTitle = cameraTitleForOldSaveFileVersion;
                 monitorPosition = new Vector3(float.Parse(coordsStringArray[0]), float.Parse(coordsStringArray[1]), float.Parse(coordsStringArray[2]));
                 monitorRotation.eulerAngles = new Vector3(float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]), float.Parse(coordsStringArray[5]));
 
-                SuperController.LogMessage("creating tmp monitorcoords object: " + groupId);
-                SuperController.LogMessage("creating tmp monitorcoords object: " + cameraTitle);
-                SuperController.LogMessage("creating tmp monitorcoords object: " + monitorPosition);
-                SuperController.LogMessage("creating tmp monitorcoords object: " + monitorRotation);
+                //SuperController.LogMessage("creating tmp monitorcoords object: " + groupId);
+                //SuperController.LogMessage("creating tmp monitorcoords object: " + cameraTitle);
+                //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorPosition);
+                //SuperController.LogMessage("creating tmp monitorcoords object: " + monitorRotation);
                 newMonitorCoords = new MonitorCoordinates(groupId, cameraTitle, monitorPosition, monitorRotation);
             }
             catch (Exception e)
