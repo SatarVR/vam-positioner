@@ -1,5 +1,7 @@
 # Virt-A-Mate Plugin Template for VSCode
 
+This readme is a copy of the template for VSCode and is not specific to the positioner plugin. The description is however a good place to start, if you want to make your own plugin.
+
 ## What you will need
 
 - [Visual Studio Code](https://code.visualstudio.com/) to edit your plugins
