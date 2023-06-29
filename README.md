@@ -5,6 +5,7 @@
 - [Visual Studio Code](https://code.visualstudio.com/) to edit your plugins
 - [.NET Core SDK](https://dotnet.microsoft.com/download) to compile your code (optional)
 - [.NET Framework 3.5 Targeting Pack](https://stackoverflow.com/a/47621616/154480) (you might already have this)
+- .NET 4.0 Targeting pack, which you can only get on Nuget
 - [Virt-A-Mate](https://www.patreon.com/meshedvr/) to use your plugins
 
 ## Get this template
