@@ -332,7 +332,7 @@ public class Positioner : MVRScript
         }
         else
         {
-            SuperController.LogError($"Deleted the last camera, not sure how the fields look and the plugin behaves after this --> TODO check");
+            SuperController.LogError($"Deleted the last camera, not sure how the fields look and the plugin behaves after this --> TODO IG check");
             updateSelectorAndTextfields = false;
         }
 
@@ -563,6 +563,7 @@ public class Positioner : MVRScript
 
     public void UpdateTextFields(string groupId, string cameraTitle)
     {
+        int requestedCameraFound = false;
         // check if the titles list contains the cameraTitle, if so, update the coord textfield
         for (int i = 0; i < MonitorCoordinatesList.Count; i++)
         {
@@ -570,8 +571,25 @@ public class Positioner : MVRScript
             {
                 CoordsTextInputFieldUI.text = MonitorCoordinatesList[i].CoordinatesAsString;
                 CoordsTextUI.val = CoordsTextInputFieldUI.text;
+                requestedCameraFound = true;
                 break;
             }
+        }
+
+        if (!requestedCameraFound)
+        {
+            // Select the first camera from the current group
+            foreach (MonitorCoordinates mc in MonitorCoordinatesList)
+            {
+                if (mc.GroupId == groupId)
+                {
+                    CoordsTextInputFieldUI.text = mc.CoordinatesAsString;
+                    CoordsTextUI.val = mc.text;
+                    cameraTitle = mc.MonitorCameraTitle;
+                }
+            }
+            
+            // TODO Test IG
         }
 
         SelectedMonitorChooserTitle = cameraTitle;
@@ -599,8 +617,6 @@ public class Positioner : MVRScript
 
     private void OnChangeSelectedGroupChoice(string groupId)
     {
-        // TODO when a group is selected, we should default the camera title to the first available camera, unless there are none
-
         SelectedGroupId = groupId;
         RefreshChoosers("");
         UpdateTextFields(groupId, SelectedMonitorChooserTitle);
@@ -755,11 +771,50 @@ public class Positioner : MVRScript
 
     private void DeleteGroup()
     {
-        SuperController.LogError("DeleteGroup is not implemented yet. TODO");
-        // TODO if it is last group, don't delete it
+        // if it is last group, don't delete it
+        if (GroupList.Count == 1)
+        {
+            SuperController.LogMessage("You cannot delete the last remaining group.");
+        }
+        else
+        {
+            // get current selected group and the group to change
+            string deletedGroupId = SelectedGroupId;
+            int deletedGroupIdInt = Int32.Parse(deletedGroupId);
 
-        
+            // delete all cameras with that group id
+            List<MonitorCoordinates> toDeleteList = new List<MonitorCoordinates>();
 
+            foreach (MonitorCoordinates mc in MonitorCoordinatesList)
+            {
+                if (mc.GroupId == SelectedGroupId)
+                {
+                    toDeleteList.Add(mc);
+                }
+            }
+
+            foreach (MonitorCoordinates mcDel in toDeleteList)
+            {
+                MonitorCoordinatesList.Remove(mcDel);
+            }
+
+            // remove group from grouplist
+            GroupList.Remove(currentSelectedGroupId);
+
+            // shift all cameras, that have a higher higher groupId than the deleted group to a new group
+            foreach (MonitorCoordinates mc in MonitorCoordinatesList)
+            {
+                if (Int32.Parse(mc.GroupId) > deletedGroupIdInt)
+                {
+                    mc.GroupId = Math.Max(deletedGroupIdInt - 1, 0);
+                }
+            }
+
+            // RefreshChoosers
+            RefreshChoosers();
+
+            // TODO IG --> check what the chooser shows after deletion and if the cameras shifted correctly
+        }
     }
 
     private void OnAddNewGroup()
