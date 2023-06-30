@@ -10,6 +10,7 @@ public class Positioner : MVRScript
     protected Atom ContainingAtom;
     protected JSONStorableBool IsPositionerHost;
     protected List<string> GroupList = new List<string>();
+    protected List<string> FlatGroupAndMonitorCoordinatesStringList = new List<string>();
     protected List<MonitorCoordinates> MonitorCoordinatesList = new List<MonitorCoordinates>();
     protected JSONStorableStringChooser MonitorPositionChooser;
     protected JSONStorableStringChooser GroupChooser;
@@ -44,6 +45,13 @@ public class Positioner : MVRScript
             GroupChooser.val = "0";
         }
 
+        // Initialize CameraGroupList with one item
+        if (FlatGroupAndMonitorCoordinatesStringList.Count == 0)
+        {
+            FlatGroupAndMonitorCoordinatesStringList.Add("0");
+        }
+
+
         // Register Actions
         RegisterActions();
 
@@ -67,26 +75,25 @@ public class Positioner : MVRScript
     protected void RegisterActions()
     {
         // ******* CREATING MAIN TRIGGERS/ACTIONS ********
-        // They are here to be displayed on TOP of every other JSONStorables
-        JSONStorableAction fakeFuncUseBelow = new JSONStorableAction("- - - - Use these functions below ↓ - - - - -", () => { });
+        JSONStorableAction fakeFuncUseBelow = new JSONStorableAction("- - - - Use these actions below ↓ - - - - -", () => { });
         RegisterAction(fakeFuncUseBelow);
 
         // Add action to show the selected camera
-        JSONStorableStringChooser A_SetMonitorCoords = new JSONStorableStringChooser("Set Camera Position", GetMonitorCoordinatesStringList(MonitorCoordinatesList), "", "Set Camera Position")
+        JSONStorableStringChooser A_SetMonitorCoords = new JSONStorableStringChooser("Set Camera", FlatGroupAndMonitorCoordinatesStringList, "", "Set Camera")
         { isStorable = false, isRestorable = false };
         A_SetMonitorCoords.setCallbackFunction += (val) => { OnSetCoordsAction(val); };
         RegisterStringChooser(A_SetMonitorCoords);
 
         SetupAction(this, "Set Random Camera Position (any group)", OnSetCoordsActionRandomAnyGroup);
 
-        JSONStorableStringChooser A_RandomSpecificGroup = new JSONStorableStringChooser("Set Random Camera Position (specific group)", GroupList, "", "Set Random Camera Position (specific group)")
+        JSONStorableStringChooser A_RandomSpecificGroup = new JSONStorableStringChooser("Set Random Camera (specific group)", GroupList, "", "Set Random Camera (specific group)")
         { isStorable = false, isRestorable = false };
         A_RandomSpecificGroup.setCallbackFunction += (val) => { OnSetCoordsActionRandomSpecificGroup(val); };
         RegisterStringChooser(A_RandomSpecificGroup);
 
-        SetupAction(this, "Set Next Camera Position", OnSetCoordsActionNext);
+        SetupAction(this, "Set Next Camera (until end)", OnSetCoordsActionNext);
 
-        SetupAction(this, "Set Next Camera Position Loop", OnSetCoordsActionNextLoop);
+        SetupAction(this, "Set Next Camera (Loop)", OnSetCoordsActionNextLoop);
 
     }
 
@@ -182,6 +189,8 @@ public class Positioner : MVRScript
                 UpdateTextFields("0", MonitorCoordinatesList[0].MonitorCameraTitle);
             }
         }
+
+        UpdateFlatGroupAndMonitorCoordinatesStringList();
     }
 
     // Keep this for compatibiliy with save fields < version 4 of the plugin
@@ -345,14 +354,22 @@ public class Positioner : MVRScript
         SetCoords(cameraVectors.MonitorPosition, cameraVectors.MonitorRotation);
     }
 
-    // Lookup the coordinates from the list (by title) and set the camera to that position
-    protected void OnSetCoordsAction(string cameraTitle)
+    // Lookup the coordinates from the list and set the camera to that position
+    // The value has the format of: Group ID: '<GroupId>', Camera: '<CameraTitle>'
+    protected void OnSetCoordsAction(string value)
     {
+        string[] groupAndCameraStringArray = value.Split('\'');
+        string groupId = groupAndCameraStringArray[1];
+        string cameraTitle = groupAndCameraStringArray[3];
+
+        SuperController.LogMessage("group id from string: " + groupId);
+        SuperController.LogMessage("cameraTitle from string: " + cameraTitle);
+
         // get string from list by id
         string coordsString = "";
         for (int i = 0; i < MonitorCoordinatesList.Count; i++)
         {
-            if (MonitorCoordinatesList[i].GroupId == SelectedGroupId && MonitorCoordinatesList[i].MonitorCameraTitle == cameraTitle)
+            if (MonitorCoordinatesList[i].GroupId == groupId && MonitorCoordinatesList[i].MonitorCameraTitle == cameraTitle)
             {
                 coordsString = MonitorCoordinatesList[i].CoordinatesAsString;
                 break;
@@ -439,7 +456,7 @@ public class Positioner : MVRScript
         string coordsAsString = "";
 
         // count max random number
-        int maxRandomNumber = 0;
+        int maxRandomNumber = -1;
 
         for (int i = 0; i < MonitorCoordinatesList.Count; i++)
         {
@@ -449,26 +466,31 @@ public class Positioner : MVRScript
             }
         }
 
-        // get a random camera from the list within the group
-        int randomListIndex = UnityEngine.Random.Range(0, maxRandomNumber);
-        int counter = 0;
-        for (int i = 0; i < MonitorCoordinatesList.Count; i++)
+        if (maxRandomNumber > -1)
         {
-            if (MonitorCoordinatesList[i].GroupId == groupId)
+            // get a random camera from the list within the group
+            int randomListIndex = UnityEngine.Random.Range(0, maxRandomNumber);
+            int counter = 0;
+            int indexFound = -1;
+            for (int i = 0; i < MonitorCoordinatesList.Count; i++)
             {
-                if (counter == randomListIndex)
+                if (MonitorCoordinatesList[i].GroupId == groupId)
                 {
-                    coordsAsString = MonitorCoordinatesList[randomListIndex].CoordinatesAsString;
-                    break;
+                    if (counter == randomListIndex)
+                    {
+                        coordsAsString = MonitorCoordinatesList[i].CoordinatesAsString;
+                        indexFound = i;
+                        break;
+                    }
+                    counter++;
                 }
-                counter++;
             }
+
+            MonitorCoordinates tmpMonitorCoordinates = CreateMonitorCoordinatesFromString(coordsAsString, "");
+
+            SetCoords(tmpMonitorCoordinates.MonitorPosition, tmpMonitorCoordinates.MonitorRotation);
+            SelectedMonitorChooserTitle = MonitorCoordinatesList[indexFound].MonitorCameraTitle;
         }
-
-        MonitorCoordinates tmpMonitorCoordinates = CreateMonitorCoordinatesFromString(coordsAsString, "");
-
-        SetCoords(tmpMonitorCoordinates.MonitorPosition, tmpMonitorCoordinates.MonitorRotation);
-        SelectedMonitorChooserTitle = MonitorCoordinatesList[randomListIndex].MonitorCameraTitle;
     }
 
     // Lookup the coordinates from the list (by title) and get the next list item. Stops at the last item in the list.
@@ -521,24 +543,24 @@ public class Positioner : MVRScript
         {
             // get string from list by id
             string coordsAsString = "";
+            int nextCamera = -1;
             for (int i = 0; i < MonitorCoordinatesList.Count; i++)
             {
                 if (MonitorCoordinatesList[i].MonitorCameraTitle == cameraTitle)
                 {
-                    if (i < MonitorCoordinatesList.Count)
+                    if (i == MonitorCoordinatesList.Count - 1)
                     {
-                        // Get the next camera
-                        i++;
+                        // if this is the last camera in the list, give back the first camera
+                        nextCamera = 0;
                     }
                     else
                     {
-                        // if this is the last camera in the list, give back the last camera
-                        i = 0;
+                        nextCamera = i + 1;
                     }
 
-                    coordsAsString = MonitorCoordinatesList[i].CoordinatesAsString;
-                    SelectedGroupId = MonitorCoordinatesList[i].GroupId;
-                    SelectedMonitorChooserTitle = MonitorCoordinatesList[i].MonitorCameraTitle;
+                    coordsAsString = MonitorCoordinatesList[nextCamera].CoordinatesAsString;
+                    SelectedGroupId = MonitorCoordinatesList[nextCamera].GroupId;
+                    SelectedMonitorChooserTitle = MonitorCoordinatesList[nextCamera].MonitorCameraTitle;
                     break;
                 }
             }
@@ -587,9 +609,16 @@ public class Positioner : MVRScript
 
     protected void RefreshChoosers(string cameraTitle)
     {
+        // Update chooser for action
+        UpdateFlatGroupAndMonitorCoordinatesStringList();
+
         // Update group chooser
         GroupChooser.choices = null; // force UI sync
         GroupChooser.choices = GroupList;
+
+        // Update group and camera chooser
+        // GroupAndCameraChooser.choices = null; // force UI sync
+        // GroupAndCameraChooser.choices = FlatGroupAndMonitorCoordinatesStringList;
 
         //SuperController.LogMessage("GroupList count after refresh: " + GroupList.Count);
 
@@ -715,6 +744,21 @@ public class Positioner : MVRScript
         DSelsp1.labelWidth = 250f;
         globalControlsUIs.Add((UIDynamic)DSelsp1);
 
+        // ******* GROUP&CAMERA CHOOSER FOR ACTION ***********
+        /*
+        GroupAndCameraChooser = new JSONStorableStringChooser("Group ID & Camera", FlatGroupAndMonitorCoordinatesStringList, "", "Group ID & Camera")
+        {
+            isRestorable = true,
+            isStorable = true,
+            storeType = JSONStorableParam.StoreType.Full
+        };
+        RegisterStringChooser(GroupAndCameraChooser);
+        GroupChooser.setCallbackFunction += (val) => { OnChangeSelectedGroupAndCameraChoice(val); };
+        UIDynamicPopup DSelsp2 = CreateScrollablePopup(GroupChooser, true);
+        DSelsp2.labelWidth = 250f;
+        globalControlsUIs.Add((UIDynamic)DSelsp2);
+*/
+
         // ******* BUTTONS FOR CAMERA CHOOSER ***********
         // add button
         UIDynamicButton addGroupBtn = CreateButton("Add group", true);
@@ -770,6 +814,11 @@ public class Positioner : MVRScript
         UIDynamicTextField helpWindow = CreateTextField(HelpText, false);
         helpWindow.height = 850.0f;
         globalControlsUIs.Add((UIDynamic)helpWindow);
+    }
+
+    private void OnChangeSelectedGroupAndCameraChoice(string val)
+    {
+        RefreshChoosers("");
     }
 
     private void DebugButton()
@@ -1005,16 +1054,31 @@ public class Positioner : MVRScript
             return coordsAsString;
         }
     }
-    public List<string> GetMonitorCoordinatesStringList(List<MonitorCoordinates> monitorCoordinatesList)
+    public void UpdateFlatGroupAndMonitorCoordinatesStringList()
     {
-        List<string> stringList = new List<string>();
-
-        foreach (MonitorCoordinates mc in monitorCoordinatesList)
+        if (MonitorCoordinatesList != null)
         {
-            stringList.Add(mc.MonitorCoordsToString());
-        }
+            if (FlatGroupAndMonitorCoordinatesStringList != null)
+            {
+                FlatGroupAndMonitorCoordinatesStringList.Clear();
+            }
 
-        return stringList;
+            SuperController.LogMessage("1 UpdateFlatGroupAndMonitorCoordinatesStringList started");
+
+            SuperController.LogMessage("1 monitorCoordinatesList count: " + MonitorCoordinatesList.Count);
+
+            foreach (MonitorCoordinates mc in MonitorCoordinatesList)
+            {
+                string groupIdAndCamera = "Group ID: '" + mc.GroupId + "', Camera: '" + mc.MonitorCameraTitle + "'";
+                // string groupIdAndCamera = mc.MonitorCameraTitle;
+                SuperController.LogMessage("1 groupIdAndCamera: " + groupIdAndCamera);
+                FlatGroupAndMonitorCoordinatesStringList.Add(groupIdAndCamera);
+                SuperController.LogMessage("1 groupIdAndCamera after add: " + groupIdAndCamera);
+            }
+
+            SuperController.LogMessage("FlatGroupAndMonitorCoordsList Count: " + FlatGroupAndMonitorCoordinatesStringList.Count);
+            // GroupAndCameraChooser.choices = FlatGroupAndMonitorCoordinatesStringList;
+        }
     }
 
     public List<string> GetCameraTitlesStringList(string groupId, List<MonitorCoordinates> monitorCoordinatesList)
