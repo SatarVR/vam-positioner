@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using SimpleJSON;
 using System.Text.RegularExpressions;
@@ -25,7 +24,6 @@ public class Positioner : MVRScript
     protected UIDynamicTextField UICameraSectionTitle;
     protected string SelectedMonitorChooserTitle = "";
     protected string SelectedGroupId = "0";
-
     protected bool isInit = false;
 
     public override void Init()
