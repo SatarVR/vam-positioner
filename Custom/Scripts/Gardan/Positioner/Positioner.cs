@@ -767,7 +767,7 @@ public class Positioner : MVRScript
                     "So it's mainly great to use with another plugin, by calling an action called 'Set Camera Position' .\n\n" +
                     "You can give the camera coordinates any kind of name, like Cam1. It helps to have a number at the end, the plugin will increment the number for you after adding another camera coordinates.\n\n"
                 );
-        UIDynamicTextField helpWindow = CreateTextField(HelpText, true);
+        UIDynamicTextField helpWindow = CreateTextField(HelpText, false);
         helpWindow.height = 850.0f;
         globalControlsUIs.Add((UIDynamic)helpWindow);
     }
