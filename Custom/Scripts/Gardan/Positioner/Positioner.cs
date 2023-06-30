@@ -362,9 +362,6 @@ public class Positioner : MVRScript
         string groupId = groupAndCameraStringArray[1];
         string cameraTitle = groupAndCameraStringArray[3];
 
-        SuperController.LogMessage("group id from string: " + groupId);
-        SuperController.LogMessage("cameraTitle from string: " + cameraTitle);
-
         // get string from list by id
         string coordsString = "";
         for (int i = 0; i < MonitorCoordinatesList.Count; i++)
@@ -615,12 +612,6 @@ public class Positioner : MVRScript
         // Update group chooser
         GroupChooser.choices = null; // force UI sync
         GroupChooser.choices = GroupList;
-
-        // Update group and camera chooser
-        // GroupAndCameraChooser.choices = null; // force UI sync
-        // GroupAndCameraChooser.choices = FlatGroupAndMonitorCoordinatesStringList;
-
-        //SuperController.LogMessage("GroupList count after refresh: " + GroupList.Count);
 
         // Update camera title chooser
         MonitorPositionChooser.valNoCallback = "";
@@ -1063,21 +1054,12 @@ public class Positioner : MVRScript
                 FlatGroupAndMonitorCoordinatesStringList.Clear();
             }
 
-            SuperController.LogMessage("1 UpdateFlatGroupAndMonitorCoordinatesStringList started");
-
-            SuperController.LogMessage("1 monitorCoordinatesList count: " + MonitorCoordinatesList.Count);
-
             foreach (MonitorCoordinates mc in MonitorCoordinatesList)
             {
                 string groupIdAndCamera = "Group ID: '" + mc.GroupId + "', Camera: '" + mc.MonitorCameraTitle + "'";
                 // string groupIdAndCamera = mc.MonitorCameraTitle;
-                SuperController.LogMessage("1 groupIdAndCamera: " + groupIdAndCamera);
                 FlatGroupAndMonitorCoordinatesStringList.Add(groupIdAndCamera);
-                SuperController.LogMessage("1 groupIdAndCamera after add: " + groupIdAndCamera);
             }
-
-            SuperController.LogMessage("FlatGroupAndMonitorCoordsList Count: " + FlatGroupAndMonitorCoordinatesStringList.Count);
-            // GroupAndCameraChooser.choices = FlatGroupAndMonitorCoordinatesStringList;
         }
     }
 
