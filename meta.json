@@ -3,10 +3,10 @@
    "creatorName" : "Gardan", 
    "packageName" : "Positioner", 
    "includeVersionsInReferences" : "true", 
-   "description" : "v5.0.0 Positioner Description", 
+   "description" : "v6.0.0 Positioner Description", 
    "credits" : "", 
    "instructions" : "", 
-   "promotionalLink" : "https://github.com/Gardan/Positioner", 
+   "promotionalLink" : "https://github.com/SatarVR/vam-positioner", 
    "programVersion" : "1.19.0.5", 
    "contentList" : [ 
       "Custom\\Scripts\\Gardan\\Positioner\\Positioner.cs"
