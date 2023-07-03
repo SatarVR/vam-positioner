@@ -768,21 +768,6 @@ public class Positioner : MVRScript
         DSelsp1.labelWidth = 250f;
         globalControlsUIs.Add((UIDynamic)DSelsp1);
 
-        // ******* GROUP&CAMERA CHOOSER FOR ACTION ***********
-        /*
-        GroupAndCameraChooser = new JSONStorableStringChooser("Group ID & Camera", FlatGroupAndMonitorCoordinatesStringList, "", "Group ID & Camera")
-        {
-            isRestorable = true,
-            isStorable = true,
-            storeType = JSONStorableParam.StoreType.Full
-        };
-        RegisterStringChooser(GroupAndCameraChooser);
-        GroupChooser.setCallbackFunction += (val) => { OnChangeSelectedGroupAndCameraChoice(val); };
-        UIDynamicPopup DSelsp2 = CreateScrollablePopup(GroupChooser, true);
-        DSelsp2.labelWidth = 250f;
-        globalControlsUIs.Add((UIDynamic)DSelsp2);
-*/
-
         // ******* BUTTONS FOR CAMERA CHOOSER ***********
         // add button
         UIDynamicButton addGroupBtn = CreateButton("Add group", true);
