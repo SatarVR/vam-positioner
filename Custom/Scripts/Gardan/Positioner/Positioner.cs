@@ -52,13 +52,8 @@ public class Positioner : MVRScript
             FlatGroupAndPositionCoordinatesStringList.Add("0");
         }
 
-
         // Register Actions
         RegisterActions();
-
-        // Not sure what this does, but it sounds like it will wait for the end of a frame
-        // before changing the camera position
-        // StartCoroutine(InitDeferred());
 
         // This registers the plugin on the containing Atom, sounds like a good idea
         if (enabled)
