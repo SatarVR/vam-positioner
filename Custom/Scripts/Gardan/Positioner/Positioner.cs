@@ -106,21 +106,6 @@ public class Positioner : MVRScript
         return action;
     }
 
-    /*
-        // Got this from AcidBubbles code, kudos.
-        private IEnumerator InitDeferred()
-        {
-            yield return new WaitForEndOfFrame();
-            if (!enabled) yield break;
-            if (SetCameraPositionOnEnable.val)
-                SetCoords();
-            yield return 0;
-            if (!enabled) yield break;
-            if (SetCameraPositionOnEnable.val)
-                SetCoords();
-        }
-    */
-
     // We need to override this function, to save a custom array in the savegame file
     public override JSONClass GetJSON(bool includePhysical = true, bool includeAppearance = true, bool forceStore = false)
     {
@@ -730,18 +715,39 @@ public class Positioner : MVRScript
         UIDynamicButton addCoordsBtn = CreateButton("Add Position", true);
         addCoordsBtn.button.onClick.AddListener(() => { OnAddNewCoords(); });
         globalControlsUIs.Add((UIDynamic)addCoordsBtn);
+        setButtonColor(addCoordsBtn, new Color(0.3f, 0.6f, 0.3f, 1f));
+        setButtonTextColor(addCoordsBtn, new Color(1f, 1f, 1f, 1f));
+        setupButtonWithLayout(addCoordsBtn, 190f);
+
+        // delete button
+        UIDynamicButton deleteCoordsBtn = CreateButton("Delete Position", true);
+        deleteCoordsBtn.button.onClick.AddListener(() => { DeleteCoords(); });
+        setButtonColor(deleteCoordsBtn, new Color(0.6f, 0.3f, 0.3f, 1f));
+        setButtonTextColor(deleteCoordsBtn, new Color(1f, 1f, 1f, 1f));
+        globalControlsUIs.Add((UIDynamic)deleteCoordsBtn);
+        setupButtonWithoutLayout(deleteCoordsBtn, 190f, new Vector2(210, -215));
+
+        UIDynamicButton moveUpDialogBtn = CreateButton("↑", true);
+        moveUpDialogBtn.button.onClick.AddListener(() => { OnMoveCurrentDialog(false); });
+        setButtonColor(moveUpDialogBtn, new Color(0.1f, 0.5f, 0.6f, 1f));
+        setButtonTextColor(moveUpDialogBtn, new Color(1f, 1f, 1f, 1f));
+        globalControlsUIs.Add((UIDynamic)moveUpDialogBtn);
+        setupButtonWithoutLayout(moveUpDialogBtn, 50f, new Vector2(410, -215));
+
+        UIDynamicButton moveDownDialogBtn = CreateButton("↓", true);
+        moveDownDialogBtn.button.onClick.AddListener(() => { OnMoveCurrentDialog(true); });
+        setButtonColor(moveDownDialogBtn, new Color(0.1f, 0.5f, 0.6f, 1f));
+        setButtonTextColor(moveDownDialogBtn, new Color(1f, 1f, 1f, 1f));
+        globalControlsUIs.Add((UIDynamic)moveDownDialogBtn);
+        setupButtonWithoutLayout(moveDownDialogBtn, 50f, new Vector2(470, -215));
+
 
         // test button
         UIDynamicButton setCoordsBtn = CreateButton("Test Position", true);
         setCoordsBtn.button.onClick.AddListener(() => { SetCoords(); });
         globalControlsUIs.Add((UIDynamic)setCoordsBtn);
 
-        // delete button
-        UIDynamicButton deleteCoordsBtn = CreateButton("Delete Position", true);
-        deleteCoordsBtn.button.onClick.AddListener(() => { DeleteCoords(); });
-        globalControlsUIs.Add((UIDynamic)deleteCoordsBtn);
 
-        /*
 
         // DEBUG button
         UIDynamicButton debugCoordsBtn = CreateButton("DEBUG", true);
@@ -753,7 +759,6 @@ public class Positioner : MVRScript
         debugGroupList.button.onClick.AddListener(() => { ReCreateGroupListDEBUG(); });
         globalControlsUIs.Add((UIDynamic)debugGroupList);
 
-        */
 
         // ******* GROUP CHOOSER  ***********
         GroupChooser = new JSONStorableStringChooser("Group ID", GroupList, "", "Group ID")
@@ -772,12 +777,18 @@ public class Positioner : MVRScript
         // add button
         UIDynamicButton addGroupBtn = CreateButton("Add group", true);
         addGroupBtn.button.onClick.AddListener(() => { OnAddNewGroup(); });
+        setButtonColor(addGroupBtn, new Color(0.3f, 0.6f, 0.3f, 1f));
+        setButtonTextColor(addGroupBtn, new Color(1f, 1f, 1f, 1f));
+        setupButtonWithLayout(addGroupBtn, 190f);
         globalControlsUIs.Add((UIDynamic)addGroupBtn);
 
         // delete button
         UIDynamicButton deleteGroup = CreateButton("Delete group", true);
         deleteGroup.button.onClick.AddListener(() => { DeleteGroup(); });
+        setButtonColor(deleteGroup, new Color(0.6f, 0.3f, 0.3f, 1f));
+        setButtonTextColor(deleteGroup, new Color(1f, 1f, 1f, 1f));
         globalControlsUIs.Add((UIDynamic)deleteGroup);
+        setupButtonWithoutLayout(deleteGroup, 190f, new Vector2(210, -460));
 
         // ******* SECTION TITLE ***********
         UIPositionSectionTitle = CreateStaticDescriptionText("UICameraSectionTitle", "<color=#000><size=35><b>Next position name</b></size></color>", false, 55, TextAnchor.MiddleLeft);
@@ -830,13 +841,54 @@ public class Positioner : MVRScript
         globalControlsUIs.Add((UIDynamic)helpWindow);
     }
 
+    private void OnMoveCurrentDialog(bool moveItemDown)
+    {
+        //false = move position up +1
+        //true = move position down -1
+
+        // get the current item
+        string cameraTitle = "";
+        if (!string.IsNullOrEmpty(SelectedGroupId) && !string.IsNullOrEmpty(SelectedPositionChooserTitle))
+        {
+            int index = 0;
+
+            foreach (PositionCoordinates coordinate in PositionCoordinatesList)
+            {
+                if (coordinate.PositionTitle == SelectedPositionChooserTitle)
+                {
+                    cameraTitle = coordinate.PositionTitle;
+                    break;
+                }
+                index++;
+            }
+
+            if (moveItemDown == true)
+            {
+                if (index > 0 && index < PositionCoordinatesList.Count)
+                {
+                    PositionCoordinates itemToMove = PositionCoordinatesList[index]; // Get the item to be moved
+                    PositionCoordinatesList.RemoveAt(index); // Remove the item from the current position
+                    PositionCoordinatesList.Insert(index - 1, itemToMove); // Insert the item at the new position
+                }
+            }
+            else
+            {
+                if (index >= 0 && index < PositionCoordinatesList.Count)
+                {
+                    PositionCoordinates itemToMove = PositionCoordinatesList[index]; // Get the item to be moved
+                    PositionCoordinatesList.RemoveAt(index); // Remove the item from the current position
+                    PositionCoordinatesList.Insert(index + 1, itemToMove); // Insert the item at the new position
+                }
+            }
+
+            RefreshChoosers(cameraTitle);
+        }
+    }
+
     private void OnApplyToAtomChanged(bool value)
     {
-        // TODO Change some UI texts from camera to Atom?
-
         // Set global value to true or false
         ApplyToAtomUI.valNoCallback = value;
-        // SuperController.LogMessage("Apply to atom set to: " + value);
     }
 
     private void OnChangeSelectedGroupAndCameraChoice(string val)
@@ -854,9 +906,12 @@ public class Positioner : MVRScript
         SuperController.LogMessage("-------------------------");
     }
 
+
+
+
     private void DeleteGroup()
     {
-        // if it is last group, don't delete it
+        // if it is the last group, don't delete it
         if (GroupList.Count == 1)
         {
             SuperController.LogMessage("You cannot delete the last remaining group.");
@@ -1004,6 +1059,21 @@ public class Positioner : MVRScript
         }
     }
 
+    private void setupButtonWithoutLayout(UIDynamicButton target, float newSize, Vector2 newPosition)
+    {
+        ContentSizeFitter tmpCSF = target.button.transform.gameObject.AddComponent<ContentSizeFitter>();
+        tmpCSF.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.MinSize;
+        LayoutElement tmpLE = target.button.transform.gameObject.GetComponent<LayoutElement>();
+        RectTransform tmpRectT = target.button.transform.GetComponent<RectTransform>();
+        Rect tmpRect = tmpRectT.rect;
+        tmpRectT.pivot = new Vector2(0f, 0.5f);
+        tmpLE.minWidth = newSize;
+        tmpLE.preferredWidth = newSize;
+        tmpLE.ignoreLayout = true;
+        tmpRectT.anchoredPosition = newPosition;
+    }
+
+
     private void OnEnable()
     {
         if (ContainingAtom == null) return;
@@ -1022,6 +1092,28 @@ public class Positioner : MVRScript
     public void OnDestroy()
     {
         SuperController.singleton.BroadcastMessage("OnActionsProviderDestroyed", this, SendMessageOptions.DontRequireReceiver);
+    }
+
+    private void setButtonColor(UIDynamicButton targetBtn, Color newColor)
+    {
+        targetBtn.buttonColor = newColor;
+    }
+
+    private void setButtonTextColor(UIDynamicButton targetBtn, Color newColor)
+    {
+        targetBtn.textColor = newColor;
+    }
+
+    private void setupButtonWithLayout(UIDynamicButton target, float newSize)
+    {
+        ContentSizeFitter tmpCSF = target.button.transform.gameObject.AddComponent<ContentSizeFitter>();
+        tmpCSF.horizontalFit = UnityEngine.UI.ContentSizeFitter.FitMode.MinSize;
+        LayoutElement tmpLE = target.button.transform.gameObject.GetComponent<LayoutElement>();
+        RectTransform tmpRectT = target.button.transform.GetComponent<RectTransform>();
+        Rect tmpRect = tmpRectT.rect;
+        tmpRectT.pivot = new Vector2(0f, 0.5f);
+        tmpLE.minWidth = newSize;
+        tmpLE.preferredWidth = newSize;
     }
 
     protected class CameraVectors
