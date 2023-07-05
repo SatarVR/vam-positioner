@@ -10,6 +10,7 @@ public class Positioner : MVRScript
     protected Atom ContainingAtom;
     protected JSONStorableBool IsPositionerHost;
     protected JSONStorableBool ApplyToAtomUI;
+    protected JSONStorableBool ApplyToMainCamera;
     protected List<string> GroupList = new List<string>();
     protected List<string> FlatGroupAndPositionCoordinatesStringList = new List<string>();
     protected List<PositionCoordinates> PositionCoordinatesList = new List<PositionCoordinates>();
@@ -709,10 +710,20 @@ public class Positioner : MVRScript
         // Creating components
 
         // ******** Camera or Containing Atom *******
+        ApplyToMainCamera = new JSONStorableBool("ApplyToMainCamera", false);
+        ApplyToMainCamera.setCallbackFunction += (val) => { OnApplyToCameraChanged(val); };
+        tmpToggle = CreateToggle(ApplyToMainCamera, true);
+        tmpToggle.label = "Target main Camera";
+        RegisterBool(ApplyToMainCamera);
+        globalControlsUIs.Add((UIDynamic)tmpToggle);
+        // set default value        
+        ApplyToMainCamera.valNoCallback = true;
+
+
         ApplyToAtomUI = new JSONStorableBool("ApplyToAtomUI", false);
         ApplyToAtomUI.setCallbackFunction += (val) => { OnApplyToAtomChanged(val); };
         tmpToggle = CreateToggle(ApplyToAtomUI, true);
-        tmpToggle.label = "Target containing Atom?";
+        tmpToggle.label = "Target containing Atom";
         RegisterBool(ApplyToAtomUI);
         globalControlsUIs.Add((UIDynamic)tmpToggle);
 
@@ -747,21 +758,21 @@ public class Positioner : MVRScript
         setButtonColor(deleteCoordsBtn, new Color(0.6f, 0.3f, 0.3f, 1f));
         setButtonTextColor(deleteCoordsBtn, new Color(1f, 1f, 1f, 1f));
         globalControlsUIs.Add((UIDynamic)deleteCoordsBtn);
-        setupButtonWithoutLayout(deleteCoordsBtn, 190f, new Vector2(210, -215));
+        setupButtonWithoutLayout(deleteCoordsBtn, 190f, new Vector2(210, -280));
 
         UIDynamicButton moveUpDialogBtn = CreateButton("↑", true);
         moveUpDialogBtn.button.onClick.AddListener(() => { OnMoveCurrentDialog(false); });
         setButtonColor(moveUpDialogBtn, new Color(0.1f, 0.5f, 0.6f, 1f));
         setButtonTextColor(moveUpDialogBtn, new Color(1f, 1f, 1f, 1f));
         globalControlsUIs.Add((UIDynamic)moveUpDialogBtn);
-        setupButtonWithoutLayout(moveUpDialogBtn, 50f, new Vector2(410, -215));
+        setupButtonWithoutLayout(moveUpDialogBtn, 50f, new Vector2(410, -280));
 
         UIDynamicButton moveDownDialogBtn = CreateButton("↓", true);
         moveDownDialogBtn.button.onClick.AddListener(() => { OnMoveCurrentDialog(true); });
         setButtonColor(moveDownDialogBtn, new Color(0.1f, 0.5f, 0.6f, 1f));
         setButtonTextColor(moveDownDialogBtn, new Color(1f, 1f, 1f, 1f));
         globalControlsUIs.Add((UIDynamic)moveDownDialogBtn);
-        setupButtonWithoutLayout(moveDownDialogBtn, 50f, new Vector2(470, -215));
+        setupButtonWithoutLayout(moveDownDialogBtn, 50f, new Vector2(470, -280));
 
         // Test button
         UIDynamicButton renameButton = CreateButton("Rename (type name in field on the left)", true);
@@ -813,7 +824,7 @@ public class Positioner : MVRScript
         setButtonColor(deleteGroup, new Color(0.6f, 0.3f, 0.3f, 1f));
         setButtonTextColor(deleteGroup, new Color(1f, 1f, 1f, 1f));
         globalControlsUIs.Add((UIDynamic)deleteGroup);
-        setupButtonWithoutLayout(deleteGroup, 190f, new Vector2(210, -525));
+        setupButtonWithoutLayout(deleteGroup, 190f, new Vector2(210, -590));
 
         // ******* SECTION TITLE ***********
         UIPositionSectionTitle = CreateStaticDescriptionText("UICameraSectionTitle", "<color=#000><size=35><b>Next position name</b></size></color>", false, 55, TextAnchor.MiddleLeft);
@@ -914,6 +925,14 @@ public class Positioner : MVRScript
     {
         // Set global value to true or false
         ApplyToAtomUI.valNoCallback = value;
+        ApplyToMainCamera.valNoCallback = !value;
+    }
+
+        private void OnApplyToCameraChanged(bool value)
+    {
+        // Set global value to true or false
+        ApplyToAtomUI.valNoCallback = !value;
+        ApplyToMainCamera.valNoCallback = value;
     }
 
     private void OnChangeSelectedGroupAndCameraChoice(string val)
