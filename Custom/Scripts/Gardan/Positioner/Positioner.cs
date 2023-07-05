@@ -325,11 +325,13 @@ public class Positioner : MVRScript
         {
             previousCameraInList = PositionCoordinatesList[currentCameraIndex - 1].PositionTitle;
             matchingGroupId = PositionCoordinatesList[currentCameraIndex - 1].GroupId;
+            GroupChooser.val = matchingGroupId;
         }
         else if (PositionCoordinatesList.Count > 0)
         {
             previousCameraInList = PositionCoordinatesList[0].PositionTitle;
             matchingGroupId = PositionCoordinatesList[0].GroupId;
+            GroupChooser.val = matchingGroupId;
         }
         else
         {
@@ -344,6 +346,21 @@ public class Positioner : MVRScript
             // update fields
             UpdateTextFields(SelectedGroupId, previousCameraInList);
         }
+    }
+
+    protected void RenamePosition()
+    {
+        foreach (PositionCoordinates coordinates in PositionCoordinatesList)
+        {
+            if (coordinates.PositionTitle == SelectedPositionChooserTitle)
+            {
+                //update the name
+                coordinates.PositionTitle = PositionTitleInputFieldUI.text;
+                SelectedPositionChooserTitle = PositionTitleInputFieldUI.text;
+            }
+        }
+
+        RefreshChoosers(SelectedPositionChooserTitle);
     }
 
     // Read the coordinates from the UI text field and set the camera to that position
@@ -636,7 +653,17 @@ public class Positioner : MVRScript
     private void OnChangeSelectedGroupChoice(string groupId)
     {
         SelectedGroupId = groupId;
-        RefreshChoosers("");
+        string cameraTitle = "";
+        foreach (PositionCoordinates coordinates in PositionCoordinatesList)
+        {
+            if (coordinates.GroupId == groupId)
+            {
+                cameraTitle = coordinates.PositionTitle;
+                break;
+            }
+        }
+
+        RefreshChoosers(cameraTitle);
         UpdateTextFields(groupId, SelectedPositionChooserTitle);
     }
 
@@ -741,14 +768,17 @@ public class Positioner : MVRScript
         globalControlsUIs.Add((UIDynamic)moveDownDialogBtn);
         setupButtonWithoutLayout(moveDownDialogBtn, 50f, new Vector2(470, -215));
 
+        // Test button
+        UIDynamicButton renameButton = CreateButton("Rename (type name in field on the left)", true);
+        renameButton.button.onClick.AddListener(() => { RenamePosition(); });
+        globalControlsUIs.Add((UIDynamic)renameButton);
 
-        // test button
+        // Test button
         UIDynamicButton setCoordsBtn = CreateButton("Test Position", true);
         setCoordsBtn.button.onClick.AddListener(() => { SetCoords(); });
         globalControlsUIs.Add((UIDynamic)setCoordsBtn);
 
-
-
+        /*
         // DEBUG button
         UIDynamicButton debugCoordsBtn = CreateButton("DEBUG", true);
         debugCoordsBtn.button.onClick.AddListener(() => { DebugButton(); });
@@ -758,7 +788,7 @@ public class Positioner : MVRScript
         UIDynamicButton debugGroupList = CreateButton("Recreate GroupList", true);
         debugGroupList.button.onClick.AddListener(() => { ReCreateGroupListDEBUG(); });
         globalControlsUIs.Add((UIDynamic)debugGroupList);
-
+        */
 
         // ******* GROUP CHOOSER  ***********
         GroupChooser = new JSONStorableStringChooser("Group ID", GroupList, "", "Group ID")
@@ -788,7 +818,7 @@ public class Positioner : MVRScript
         setButtonColor(deleteGroup, new Color(0.6f, 0.3f, 0.3f, 1f));
         setButtonTextColor(deleteGroup, new Color(1f, 1f, 1f, 1f));
         globalControlsUIs.Add((UIDynamic)deleteGroup);
-        setupButtonWithoutLayout(deleteGroup, 190f, new Vector2(210, -460));
+        setupButtonWithoutLayout(deleteGroup, 190f, new Vector2(210, -525));
 
         // ******* SECTION TITLE ***********
         UIPositionSectionTitle = CreateStaticDescriptionText("UICameraSectionTitle", "<color=#000><size=35><b>Next position name</b></size></color>", false, 55, TextAnchor.MiddleLeft);
@@ -905,9 +935,6 @@ public class Positioner : MVRScript
         }
         SuperController.LogMessage("-------------------------");
     }
-
-
-
 
     private void DeleteGroup()
     {
