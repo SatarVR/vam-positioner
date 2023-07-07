@@ -76,14 +76,13 @@ public class Positioner : MVRScript
         RegisterAction(fakeFuncUseBelow);
 
         // Add action to show the selected camera
-        JSONStorableStringChooser A_SetPositionCoords = new JSONStorableStringChooser("Set Position", FlatGroupAndPositionCoordinatesStringList, "", "Set Position")
-        { isStorable = false, isRestorable = false };
+        JSONStorableStringChooser A_SetPositionCoords = new JSONStorableStringChooser("Set Position", FlatGroupAndPositionCoordinatesStringList, "", "Set Position");
         A_SetPositionCoords.setCallbackFunction += (val) => { OnSetCoordsAction(val); };
         RegisterStringChooser(A_SetPositionCoords);
 
         SetupAction(this, "Set Random Position (any group)", OnSetCoordsActionRandomAnyGroup);
 
-        JSONStorableStringChooser A_RandomSpecificGroup = new JSONStorableStringChooser("Set Position (specific group)", GroupList, "", "Set Random Position (specific group)")
+        JSONStorableStringChooser A_RandomSpecificGroup = new JSONStorableStringChooser("Set Random Position (specific group)", GroupList, "", "Set Random Position (specific group)")
         { isStorable = false, isRestorable = false };
         A_RandomSpecificGroup.setCallbackFunction += (val) => { OnSetCoordsActionRandomSpecificGroup(val); };
         RegisterStringChooser(A_RandomSpecificGroup);
@@ -159,7 +158,8 @@ public class Positioner : MVRScript
                     GroupList.Add("0");
                 }
 
-                PositionChooser.valNoCallback = "";
+                // TODO why set this to empty?
+                // PositionChooser.valNoCallback = "";
                 PositionChooser.choices = null; // force UI sync
                 PositionChooser.choices = GetCameraTitlesStringList(SelectedGroupId, PositionCoordinatesList);
                 GroupChooser.choices = null; // force UI sync
@@ -205,7 +205,8 @@ public class Positioner : MVRScript
 
             //SuperController.LogMessage("setting choices");
 
-            PositionChooser.valNoCallback = "";
+            //TODO why set this to empty?
+            //PositionChooser.valNoCallback = "";
             PositionChooser.choices = null; // force UI sync
             PositionChooser.choices = GetCameraTitlesStringList("0", PositionCoordinatesList);
             GroupChooser.choices = GroupList;
@@ -368,52 +369,98 @@ public class Positioner : MVRScript
     }
 
     // Lookup the coordinates from the list and set the camera to that position
-    // The value has the format of: Group ID: '<GroupId>', Camera: '<CameraTitle>'
+    // The value has the format of: Group ID: '<GroupId>', Position: '<PositionTitle>'
     protected void OnSetCoordsAction(string value)
     {
-        string[] groupAndCameraStringArray = value.Split('\'');
-        string groupId = groupAndCameraStringArray[1];
-        string positionTitle = groupAndCameraStringArray[3];
+        SuperController.LogMessage($"Action called: " + value);
 
-        // get string from list by id
-        string coordsString = "";
-        for (int i = 0; i < PositionCoordinatesList.Count; i++)
+		PositionChooser.valNoCallback = ""; // Resetting so that the user can trigger several times the same group if needed, TODO do we need this?
+
+        if (!string.IsNullOrEmpty(value))
         {
-            if (PositionCoordinatesList[i].GroupId == groupId && PositionCoordinatesList[i].PositionTitle == positionTitle)
+            string[] groupAndCameraStringArray = value.Split('\'');
+            string groupId = groupAndCameraStringArray[1];
+            string positionTitle = groupAndCameraStringArray[3];
+
+            SelectedGroupId = groupId;
+            SelectedPositionChooserTitle = positionTitle;
+
+            SuperController.LogMessage($"groupId: " + groupId);
+            SuperController.LogMessage($"positionTitle: " + positionTitle);
+
+            // get string from list by id
+            string coordsString = "";
+            for (int i = 0; i < PositionCoordinatesList.Count; i++)
             {
-                coordsString = PositionCoordinatesList[i].CoordinatesAsString;
-                break;
-            }
-        }
-
-        string[] coordsStringArray = coordsString.Split('_');
-
-        // sometimes this array has only length 1 (empty string), can't figure out why, it works anyway, no need to bother the user about it.
-        if (coordsStringArray.Length > 1)
-        {
-
-            if (coordsStringArray.Length == 8)
-            {
-                try
+                if (PositionCoordinatesList[i].GroupId == groupId && PositionCoordinatesList[i].PositionTitle == positionTitle)
                 {
-                    Vector3 newPosition = new Vector3(float.Parse(coordsStringArray[2]), float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]));
-                    Vector3 newRotation = new Vector3(float.Parse(coordsStringArray[5]), float.Parse(coordsStringArray[6]), float.Parse(coordsStringArray[7]));
-
-                    SetCoords(newPosition, newRotation);
+                    coordsString = PositionCoordinatesList[i].CoordinatesAsString;
+                    break;
                 }
-                catch (Exception e)
+            }
+
+            string[] coordsStringArray = coordsString.Split('_');
+
+            // sometimes this array has only length 1 (empty string), can't figure out why, it works anyway, no need to bother the user about it.
+            if (coordsStringArray.Length > 1)
+            {
+
+                if (coordsStringArray.Length == 8)
                 {
-                    SuperController.LogError($"Could not parse coordinates from the text field.");
-                    SuperController.LogError(e.Message);
+                    try
+                    {
+                        Vector3 newPosition = new Vector3(float.Parse(coordsStringArray[2]), float.Parse(coordsStringArray[3]), float.Parse(coordsStringArray[4]));
+                        Vector3 newRotation = new Vector3(float.Parse(coordsStringArray[5]), float.Parse(coordsStringArray[6]), float.Parse(coordsStringArray[7]));
+
+                        SetCoords(newPosition, newRotation);
+                    }
+                    catch (Exception e)
+                    {
+                        SuperController.LogError($"Could not parse coordinates from the text field.");
+                        SuperController.LogError(e.Message);
+                    }
+                }
+                else
+                {
+                    SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
                 }
             }
             else
             {
-                SuperController.LogError($"Could not parse coordinates from the text field, need exactly 6 coordinates (position x,y,z and rotation x,y,z).");
-            }
-        }
+                // somehow we didn't get the coordinates string, so let's try again
+                foreach (PositionCoordinates coordinates in PositionCoordinatesList)
+                {
+                    if (coordinates.GroupId == SelectedGroupId && coordinates.PositionTitle == SelectedPositionChooserTitle)
+                    {
+                        SetCoords(coordinates.Position, coordinates.Rotation);
+                        SuperController.LogError($"Setting workaroudn, should fix next reported error");
+                        break;
+                    }
+                }
 
-        SelectedPositionChooserTitle = positionTitle;
+                SuperController.LogError($"----------");
+                SuperController.LogError($"setting didnt work, coords length: " + coordsStringArray.Length);
+                SuperController.LogError($"coordsStringArray[0]: " + coordsStringArray[0]);
+                SuperController.LogError($"SelectedGroupId: " + SelectedGroupId);
+                SuperController.LogError($"SelectedPositionChooserTitle: " + SelectedPositionChooserTitle);
+                SuperController.LogError($"Setting: " + SelectedGroupId);
+                SuperController.LogError($"Setting: " + SelectedPositionChooserTitle);
+                SuperController.LogError($"----------");
+            }
+
+            SelectedPositionChooserTitle = positionTitle;
+
+            RefreshChoosers(positionTitle);
+        }
+        else
+        {
+            // sometimes we get an action call with nothing in it
+            SuperController.LogMessage($"----------");
+            SuperController.LogMessage($"Empty action call.");
+            SuperController.LogMessage($"SelectedGroup: " + SelectedGroupId);
+            SuperController.LogMessage($"SelectedTitle: " + SelectedPositionChooserTitle);
+            SuperController.LogMessage($"----------");
+        }
     }
 
     // Here we get the coordinates via parameters set the camera to that position
@@ -628,15 +675,19 @@ public class Positioner : MVRScript
 
     protected void RefreshChoosers(string cameraTitle)
     {
+        SuperController.LogMessage("refreshing choosers: " + cameraTitle);
+
         // Update chooser for action
         UpdateFlatGroupAndPositionCoordinatesStringList();
 
         // Update group chooser
+        GroupChooser.valNoCallback = ""; // Also updating the trigger system to start the dialogs
         GroupChooser.choices = null; // force UI sync
         GroupChooser.choices = GroupList;
 
         // Update camera title chooser
-        PositionChooser.valNoCallback = "";
+        // TODO why set this to empty?
+        PositionChooser.valNoCallback = ""; // Also updating the trigger system to start the dialogs
         PositionChooser.choices = null; // force UI sync
         PositionChooser.choices = GetCameraTitlesStringList(SelectedGroupId, PositionCoordinatesList);
 
@@ -928,7 +979,7 @@ public class Positioner : MVRScript
         ApplyToMainCamera.valNoCallback = !value;
     }
 
-        private void OnApplyToCameraChanged(bool value)
+    private void OnApplyToCameraChanged(bool value)
     {
         // Set global value to true or false
         ApplyToAtomUI.valNoCallback = !value;
@@ -1216,12 +1267,13 @@ public class Positioner : MVRScript
         {
             if (FlatGroupAndPositionCoordinatesStringList != null)
             {
+                SuperController.LogMessage("clearing and resetting FlatGroupAndPositionCoordinatesStringList");
                 FlatGroupAndPositionCoordinatesStringList.Clear();
             }
 
             foreach (PositionCoordinates mc in PositionCoordinatesList)
             {
-                string groupIdAndCamera = "Group ID: '" + mc.GroupId + "', Camera: '" + mc.PositionTitle + "'";
+                string groupIdAndCamera = "Group ID: '" + mc.GroupId + "', Title: '" + mc.PositionTitle + "'";
                 // string groupIdAndCamera = mc.MonitorCameraTitle;
                 FlatGroupAndPositionCoordinatesStringList.Add(groupIdAndCamera);
             }
