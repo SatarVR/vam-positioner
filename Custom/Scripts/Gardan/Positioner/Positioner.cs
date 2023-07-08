@@ -376,7 +376,7 @@ public class Positioner : MVRScript
     // The value has the format of: Group ID: '<GroupId>', Position: '<PositionTitle>'
     protected void OnSetCoordsAction(string value)
     {
-        SuperController.LogMessage($"Action called: " + value);
+        // SuperController.LogMessage($"Action called: " + value);
 
 		A_SetPositionCoords.valNoCallback = ""; // This is important, otherwise Actions don't fire anymore
         // GroupChooser.valNoCallback = ""; // TODO TEST: Resetting so that the user can trigger several times the same group if needed, TODO do we need this?
@@ -391,8 +391,8 @@ public class Positioner : MVRScript
             SelectedGroupId = groupId;
             SelectedPositionChooserTitle = positionTitle;
 
-            SuperController.LogMessage($"groupId: " + groupId);
-            SuperController.LogMessage($"positionTitle: " + positionTitle);
+            // SuperController.LogMessage($"groupId: " + groupId);
+            // SuperController.LogMessage($"positionTitle: " + positionTitle);
 
             // get string from list by id
             string coordsString = "";
@@ -444,6 +444,7 @@ public class Positioner : MVRScript
                     }
                 }
 
+/*
                 SuperController.LogError($"----------");
                 SuperController.LogError($"setting didnt work, coords length: " + coordsStringArray.Length);
                 SuperController.LogError($"coordsStringArray[0]: " + coordsStringArray[0]);
@@ -452,6 +453,7 @@ public class Positioner : MVRScript
                 SuperController.LogError($"Setting: " + SelectedGroupId);
                 SuperController.LogError($"Setting: " + SelectedPositionChooserTitle);
                 SuperController.LogError($"----------");
+                */
             }
 
             SelectedPositionChooserTitle = positionTitle;
@@ -462,7 +464,7 @@ public class Positioner : MVRScript
         {
             // sometimes we get an action call with nothing in it
             SuperController.LogMessage($"----------");
-            SuperController.LogMessage($"Empty action call.");
+            SuperController.LogMessage($"Empty action call. Not serious, but should not happen.");
             SuperController.LogMessage($"SelectedGroup: " + SelectedGroupId);
             SuperController.LogMessage($"SelectedTitle: " + SelectedPositionChooserTitle);
             SuperController.LogMessage($"----------");
@@ -681,7 +683,7 @@ public class Positioner : MVRScript
 
     protected void RefreshChoosers(string cameraTitle)
     {
-        SuperController.LogMessage("refreshing choosers: " + cameraTitle);
+        // SuperController.LogMessage("refreshing choosers: " + cameraTitle);
 
         // Update chooser for action
         UpdateFlatGroupAndPositionCoordinatesStringList();
@@ -1273,7 +1275,7 @@ public class Positioner : MVRScript
         {
             if (FlatGroupAndPositionCoordinatesStringList != null)
             {
-                SuperController.LogMessage("clearing and resetting FlatGroupAndPositionCoordinatesStringList");
+                // SuperController.LogMessage("clearing and resetting FlatGroupAndPositionCoordinatesStringList");
                 FlatGroupAndPositionCoordinatesStringList.Clear();
             }
 
