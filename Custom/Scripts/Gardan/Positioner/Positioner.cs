@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using SimpleJSON;
 using System.Text.RegularExpressions;
+using System.Collections;
 
 public class Positioner : MVRScript
 {
@@ -16,6 +17,7 @@ public class Positioner : MVRScript
     protected List<PositionCoordinates> PositionCoordinatesList = new List<PositionCoordinates>();
     protected JSONStorableStringChooser PositionChooser;
     protected JSONStorableStringChooser GroupChooser;
+    protected JSONStorableStringChooser A_SetPositionCoords;
     protected List<UIDynamic> globalControlsUIs = new List<UIDynamic>();
     protected JSONStorableString CoordsTextUI;
     protected JSONStorableString PositionTitleUI;
@@ -76,7 +78,7 @@ public class Positioner : MVRScript
         RegisterAction(fakeFuncUseBelow);
 
         // Add action to show the selected camera
-        JSONStorableStringChooser A_SetPositionCoords = new JSONStorableStringChooser("Set Position", FlatGroupAndPositionCoordinatesStringList, "", "Set Position");
+        A_SetPositionCoords = new JSONStorableStringChooser("Set Position", FlatGroupAndPositionCoordinatesStringList, "", "Set Position");
         A_SetPositionCoords.setCallbackFunction += (val) => { OnSetCoordsAction(val); };
         RegisterStringChooser(A_SetPositionCoords);
 
@@ -367,6 +369,8 @@ public class Positioner : MVRScript
         CameraVectors cameraVectors = CreateCameraVectorsFromCoordinatesString(coordsAsString);
         SetCoords(cameraVectors.Position, cameraVectors.Rotation);
     }
+     
+
 
     // Lookup the coordinates from the list and set the camera to that position
     // The value has the format of: Group ID: '<GroupId>', Position: '<PositionTitle>'
@@ -374,7 +378,9 @@ public class Positioner : MVRScript
     {
         SuperController.LogMessage($"Action called: " + value);
 
-		PositionChooser.valNoCallback = ""; // Resetting so that the user can trigger several times the same group if needed, TODO do we need this?
+		A_SetPositionCoords.valNoCallback = ""; // This is important, otherwise Actions don't fire anymore
+        // GroupChooser.valNoCallback = ""; // TODO TEST: Resetting so that the user can trigger several times the same group if needed, TODO do we need this?
+        // PositionChooser.valNoCallback = ""; // Resetting so that the user can trigger several times the same group if needed, TODO do we need this?
 
         if (!string.IsNullOrEmpty(value))
         {
@@ -681,13 +687,13 @@ public class Positioner : MVRScript
         UpdateFlatGroupAndPositionCoordinatesStringList();
 
         // Update group chooser
-        GroupChooser.valNoCallback = ""; // Also updating the trigger system to start the dialogs
+        // GroupChooser.valNoCallback = ""; // Also updating the trigger system to start the dialogs
         GroupChooser.choices = null; // force UI sync
         GroupChooser.choices = GroupList;
 
         // Update camera title chooser
         // TODO why set this to empty?
-        PositionChooser.valNoCallback = ""; // Also updating the trigger system to start the dialogs
+        // PositionChooser.valNoCallback = ""; // Also updating the trigger system to start the dialogs
         PositionChooser.choices = null; // force UI sync
         PositionChooser.choices = GetCameraTitlesStringList(SelectedGroupId, PositionCoordinatesList);
 
