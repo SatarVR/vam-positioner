@@ -177,7 +177,7 @@ public class Positioner : MVRScript
         UpdateFlatGroupAndPositionCoordinatesStringList();
     }
 
-    // Keep this for compatibiliy with save fields < version 4 of the plugin
+    // Keep this for compatibiliy with save files < version 4 of the plugin
     public void OldVersionLateRestoreFromJSON(JSONClass jc, bool restorePhysical = true, bool restoreAppearance = true, bool setMissingToDefault = true)
     {
         //SuperController.LogMessage("old version restore started.");
