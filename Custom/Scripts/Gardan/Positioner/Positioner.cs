@@ -242,10 +242,15 @@ public class Positioner : MVRScript
         {
             PositionCoordinatesList.Add(new PositionCoordinates(groupId, cameraTitle, coordsAsString));
         }
+
+        ///TODO: Probably after adding a camera we should force an update of the camera list
+        /// Not sure if this solves a problem, testing...
+        RefreshChoosers(cameraTitle);
+
     }
 
     // This happens when the button "add coords" is pressed
-    protected void OnAddNewCoords()
+    protected void OnAddNewPosition()
     {
         string positionTitle = PositionTitleInputFieldUI.text;
         Vector3 newPosition;
@@ -274,8 +279,8 @@ public class Positioner : MVRScript
         // Create Coordinates object
         PositionCoordinates tmpCoords = new PositionCoordinates(SelectedGroupId, positionTitle, newPosition, newRotation.eulerAngles);
 
-        // We add the coordinates to a string list, so at each position in the list (ID), we have a set of coordinates
-        // but check if we need to update instead of adding a value
+        // We add the coordinates to a string list, so at each position in the list (ID), we have a set of coordinates.
+        // And we need to check if we need to update a value instead of adding a new one
         AddOrUpdateCameraList(SelectedGroupId, positionTitle, tmpCoords.PositionCoordsToString());
 
         RefreshChoosers(positionTitle);
@@ -648,6 +653,11 @@ public class Positioner : MVRScript
         }
     }
 
+    /// <summary>
+    /// This updates the text fields in the GUI. Has nothing to do with the actual dropdowns.
+    /// </summary>
+    /// <param name="groupId"></param>
+    /// <param name="cameraTitle"></param>
     public void UpdateTextFields(string groupId, string cameraTitle)
     {
         bool requestedCameraFound = false;
@@ -681,6 +691,10 @@ public class Positioner : MVRScript
         SelectedPositionChooserTitle = cameraTitle;
     }
 
+    /// <summary>
+    /// This forces a refresh of the dropdowns (choosers). If you pass a camera title, the choosers in the GUI will set to the matching camera title.
+    /// </summary>
+    /// <param name="cameraTitle"></param>
     protected void RefreshChoosers(string cameraTitle)
     {
         // SuperController.LogMessage("refreshing choosers: " + cameraTitle);
@@ -701,6 +715,8 @@ public class Positioner : MVRScript
 
         if (!string.IsNullOrEmpty(cameraTitle))
         {
+            // TODO: I think there's a bug here, because the title is set, but the dropdown slider is at the wrong position. 
+            // Probably there's a way to set the slider to the correct position as well.
             PositionChooser.val = cameraTitle;
         }
     }
@@ -805,7 +821,7 @@ public class Positioner : MVRScript
         // ******* BUTTONS FOR CAMERA CHOOSER ***********
         // add button
         UIDynamicButton addCoordsBtn = CreateButton("Add Position", true);
-        addCoordsBtn.button.onClick.AddListener(() => { OnAddNewCoords(); });
+        addCoordsBtn.button.onClick.AddListener(() => { OnAddNewPosition(); });
         globalControlsUIs.Add((UIDynamic)addCoordsBtn);
         setButtonColor(addCoordsBtn, new Color(0.3f, 0.6f, 0.3f, 1f));
         setButtonTextColor(addCoordsBtn, new Color(1f, 1f, 1f, 1f));
